@@ -26,6 +26,10 @@ describe("parseTopBanners", () => {
     expect(titles).not.toContain("スポーツくじ");
   });
 
+  it("Loppi のグッズ・チケットの告知は店舗の告知ではないので除く", () => {
+    expect(banners.map((b) => b.title).join("\n")).not.toContain("Loppi");
+  });
+
   it("ほかの地域限定の告知は除く", () => {
     expect(banners.map((b) => b.title).join("\n")).not.toContain("北海道");
   });

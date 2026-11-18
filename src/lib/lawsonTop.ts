@@ -13,10 +13,13 @@ export type TopBanner = {
 };
 
 /**
- * 店頭の告知に関係しないリンク先。会社のニュース・取り組み（/company/）と
- * サービス案内（/service/ 。スポーツくじなど）は除く。
+ * 店頭の告知に関係しないリンク先。会社のニュース・取り組み（/company/）、
+ * サービス案内（/service/ 。スポーツくじなど）、Loppi のグッズ・チケット（/campaign/lop_）は除く。
  */
-const EXCLUDED_PATHS = [/^\/company\//, /^\/service\//];
+const EXCLUDED_PATHS = [/^\/company\//, /^\/service\//, /^\/campaign\/lop_/];
+
+/** 名前に含まれていたら除く言葉（Loppi のグッズ・チケットは店舗の告知ではない） */
+const EXCLUDED_WORDS = [/loppi/i];
 
 /** バナーの説明文から、画面の読み上げ用の言葉（「別ウィンドウで開きます」など）を除く */
 function cleanLabel(label: string): string {
@@ -40,7 +43,7 @@ function bannerId(href: string): string {
 
 /**
  * トップページのメインのスライドから告知を取り出す（スライドの順＝ローソンが推している順）。
- * 会社のニュース・サービス案内と、お店の地域で実施されない地域限定の告知は除く。
+ * 会社のニュース・サービス案内・Loppi の告知と、お店の地域で実施されない地域限定の告知は除く。
  */
 export function parseTopBanners(html: string): TopBanner[] {
   const source = stripComments(html);
@@ -52,7 +55,7 @@ export function parseTopBanners(html: string): TopBanner[] {
   for (const [, rawLabel, href] of slider[1].matchAll(/<div data-label="([^"]*)">\s*<a href="([^"]+)"/g)) {
     if (EXCLUDED_PATHS.some((p) => p.test(href))) continue;
     const title = cleanLabel(rawLabel);
-    if (!title || !isAvailableInArea(title)) continue;
+    if (!title || !isAvailableInArea(title) || EXCLUDED_WORDS.some((w) => w.test(title))) continue;
     const id = bannerId(href);
     if (seen.has(id)) continue;
     seen.add(id);
