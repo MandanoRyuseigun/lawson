@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatShortDate, getTargetTuesday } from "./targetTuesday";
+import { formatShortDate, getTargetTuesday, toIsoDate } from "./targetTuesday";
 
 describe("getTargetTuesday", () => {
   it("水曜日なら翌週の火曜日を返す", () => {
@@ -22,6 +22,12 @@ describe("getTargetTuesday", () => {
     // 2026/11/25(水) → 2026/12/1(火)
     const result = getTargetTuesday(new Date(2026, 10, 25));
     expect(result).toEqual(new Date(2026, 11, 1));
+  });
+});
+
+describe("toIsoDate", () => {
+  it("YYYY-MM-DD の形式で返す", () => {
+    expect(toIsoDate(new Date(2026, 11, 1, 23, 59))).toBe("2026-12-01");
   });
 });
 

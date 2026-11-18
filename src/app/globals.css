@@ -169,6 +169,10 @@ button:disabled {
   padding: 0 8px;
   margin-left: 6px;
   font-weight: normal;
+  /* ラベルの途中で改行しない */
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: 2px;
 }
 
 .item .btn-row {
@@ -239,4 +243,62 @@ textarea.notice {
 
 .status-error {
   color: var(--danger);
+}
+
+/* 更新で増えた・変わった項目の印 */
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 0 6px;
+  margin-right: 6px;
+  vertical-align: 2px;
+  /* ライト表示では白、ダーク表示では黒の文字にして読みやすくする */
+  color: var(--accent-text);
+}
+
+.badge-new {
+  background: var(--ok);
+}
+
+.badge-changed {
+  background: var(--important);
+}
+
+.item-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* 開始日の切り替え */
+.date-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+}
+
+.date-tabs button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  border-radius: 999px;
+}
+
+.date-tabs button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.notice-box {
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--bg);
+  font-size: 0.9rem;
 }

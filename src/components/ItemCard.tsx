@@ -39,10 +39,17 @@ export function ItemCard(props: Props) {
   return (
     <li className={classes}>
       <p className="item-name">
+        {item.webStatus === "new" && <span className="badge badge-new">新着</span>}
+        {item.webStatus === "changed" && <span className="badge badge-changed">変更</span>}
         {item.name}
         <span className="item-source">{SOURCE_LABEL[item.source]}</span>
       </p>
       {meta && <p className="item-meta">{meta}</p>}
+      {item.url && (
+        <a className="item-link" href={item.url} target="_blank" rel="noopener noreferrer">
+          公式サイトで対象商品を見る ↗
+        </a>
+      )}
       <div className="btn-row">
         <button type="button" className="toggle" aria-pressed={item.selected} onClick={props.onToggleSelected}>
           {item.selected ? "✓ 載せる" : "載せない"}

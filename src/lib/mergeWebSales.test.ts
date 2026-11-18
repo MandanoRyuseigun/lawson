@@ -36,6 +36,7 @@ describe("mergeWebSales", () => {
     });
     expect(web.webStatus).toBeUndefined();
     expect(result.added).toBe(1);
+    expect(result.isFirstFetch).toBe(true);
   });
 
   it("手入力や写真の項目はそのまま残す", () => {
@@ -49,6 +50,7 @@ describe("mergeWebSales", () => {
     expect(result.items.find((i) => i.id === "web-2")?.webStatus).toBe("new");
     expect(result.items.find((i) => i.id === "web-1")?.webStatus).toBeUndefined();
     expect(result.added).toBe(1);
+    expect(result.isFirstFetch).toBe(false);
   });
 
   it("内容が変わった項目は「変更」を付け、選択状態は保つ", () => {

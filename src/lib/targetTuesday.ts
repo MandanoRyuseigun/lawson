@@ -11,6 +11,13 @@ export function getTargetTuesday(today: Date = new Date()): Date {
   return base;
 }
 
+/** 日付を「2026-11-24」の形式にする（ローカル時刻） */
+export function toIsoDate(date: Date): string {
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
 /** 日付を「11/24(火)」の形式で表示用に整える。 */
 export function formatShortDate(date: Date): string {
   const weekdays = ["日", "月", "火", "水", "木", "金", "土"];

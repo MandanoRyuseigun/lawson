@@ -6,6 +6,8 @@ export type MergeResult = {
   added: number;
   changed: number;
   removed: number;
+  /** 公式サイトからの初めての取り込みか */
+  isFirstFetch: boolean;
 };
 
 /**
@@ -59,5 +61,5 @@ export function mergeWebSales(current: SaleItem[], sales: WebSale[]): MergeResul
   const removed = [...previous.keys()].filter((id) => !keptIds.has(id)).length;
   const others = current.filter((i) => i.source !== "web");
 
-  return { items: [...webItems, ...others], added, changed, removed };
+  return { items: [...webItems, ...others], added, changed, removed, isFirstFetch };
 }

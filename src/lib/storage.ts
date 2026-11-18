@@ -47,3 +47,22 @@ export function saveItems(items: SaleItem[]): void {
     // 保存できなくても画面の操作は続けられるようにする
   }
 }
+
+const FETCHED_AT_KEY = "lawson-sale-notice:fetchedAt:v1";
+
+/** 公式サイトから最後に取り込んだ日時（ISO 形式） */
+export function loadFetchedAt(): string | null {
+  try {
+    return window.localStorage.getItem(FETCHED_AT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveFetchedAt(iso: string): void {
+  try {
+    window.localStorage.setItem(FETCHED_AT_KEY, iso);
+  } catch {
+    // 保存できなくても続ける
+  }
+}
