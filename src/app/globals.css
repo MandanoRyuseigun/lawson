@@ -1,42 +1,242 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --text: #1c1f24;
+  --muted: #69707a;
+  --border: #d8dde4;
+  --accent: #1468c8;
+  --accent-text: #ffffff;
+  --important: #d9480f;
+  --important-bg: #fff1e6;
+  --ok: #2b8a3e;
+  --danger: #c92a2a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #121418;
+    --surface: #1c1f25;
+    --text: #e9ecef;
+    --muted: #9aa1ab;
+    --border: #343a43;
+    --accent: #4d9cf0;
+    --accent-text: #0b0d10;
+    --important: #ff922b;
+    --important-bg: #3a2414;
+    --ok: #51cf66;
+    --danger: #ff6b6b;
   }
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html,
 body {
+  margin: 0;
+  padding: 0;
   max-width: 100vw;
   overflow-x: hidden;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 8px 0 4px;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ボタン: 片手で押しやすい高さを確保する */
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-row > * {
+  flex: 1 1 0;
+}
+
+/* 項目カード */
+.item-list {
+  list-style: none;
   padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.item.is-off {
+  opacity: 0.55;
+}
+
+.item.is-important {
+  border-color: var(--important);
+  background: var(--important-bg);
+}
+
+.item-name {
+  font-weight: 600;
   margin: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+.item-meta {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  white-space: pre-wrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+.item-source {
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 8px;
+  margin-left: 6px;
+  font-weight: normal;
+}
+
+.item .btn-row {
+  margin-top: 10px;
+}
+
+.toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.toggle-important[aria-pressed="true"] {
+  background: var(--important);
+  border-color: var(--important);
+  color: #fff;
+}
+
+/* 入力欄 */
+label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+input[type="text"],
+textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font: inherit;
+  /* iOS で入力時に拡大されないよう 16px 以上にする */
+  font-size: 16px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+textarea.notice {
+  min-height: 320px;
+  line-height: 1.7;
+}
+
+.file-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.status-ok {
+  color: var(--ok);
+}
+
+.status-error {
+  color: var(--danger);
 }
