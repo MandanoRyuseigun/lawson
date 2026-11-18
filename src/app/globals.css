@@ -379,3 +379,40 @@ textarea.notice {
   padding-left: 6px;
   padding-right: 6px;
 }
+
+/* 写真から読み取った行のピックアップ */
+.ocr-lines {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ocr-lines li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocr-lines input[type="text"] {
+  margin-top: 0;
+}
+
+.ocr-lines li.is-picked input[type="text"] {
+  border-color: var(--accent);
+}
+
+.ocr-check {
+  flex: 0 0 44px;
+  width: 44px;
+  padding: 0;
+  font-weight: 700;
+}
+
+.ocr-check[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}

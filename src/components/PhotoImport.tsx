@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { parseOcrText } from "@/lib/parseOcrText";
-import type { SaleItemFields } from "@/lib/saleItem";
 
 type Props = {
-  /** 読み取り結果（下書き）を受け取る */
-  onResult: (fields: SaleItemFields, rawText: string) => void;
+  /** 読み取った文字（そのままの文字起こし）を受け取る */
+  onResult: (rawText: string) => void;
 };
 
 /**
@@ -33,8 +31,8 @@ export function PhotoImport({ onResult }: Props) {
       const { data } = await worker.recognize(file);
       await worker.terminate();
 
-      onResult(parseOcrText(data.text), data.text);
-      setStatus("読み取りました。内容を確認して直してください。");
+      onResult(data.text);
+      setStatus("");
     } catch {
       setStatus("読み取りに失敗しました。手入力で追加してください。");
     } finally {

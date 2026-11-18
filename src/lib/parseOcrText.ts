@@ -15,7 +15,7 @@ function isValidDate(month: string, day: string): boolean {
  * - 日本語の前後に入る余計な空白を詰める（例:「か ら あ げ」「( 火 )」）
  * - よくある誤読を直す: 日付の「/」→「7」、期間の「〜」→「ー」
  */
-function normalize(text: string): string {
+export function normalizeOcrText(text: string): string {
   return (
     text
       .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -42,7 +42,7 @@ const PRICE_PATTERN = /(?:税込\s*)?\d[\d,]*\s*円(?:引き?|引)?|\d{1,2}\s*%\
  * 読み取りは誤りを含む前提なので、見つからない欄は空のままにする（推測で埋めない）。
  */
 export function parseOcrText(raw: string): SaleItemFields {
-  const text = normalize(raw);
+  const text = normalizeOcrText(raw);
   const period = text.match(PERIOD_PATTERN)?.[0].replace(/\s+/g, "") ?? "";
   const price = text.match(PRICE_PATTERN)?.[0].replace(/\s+/g, "") ?? "";
 
@@ -54,4 +54,20 @@ export function parseOcrText(raw: string): SaleItemFields {
       .find((rest) => rest.length >= 2) ?? "";
 
   return { name, price, period, note: "", emoji: "", section: "other" };
+}
+
+/** 文字として意味のある文字（ひらがな・カタカナ・漢字・英数字） */
+const MEANINGFUL = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}A-Za-z0-9]/gu;
+
+/**
+ * OCR で読み取ったテキストを、ピックアップしやすい行の一覧にする。
+ * 誤読の補正や空白の詰めをした上で、意味のある文字が 2 文字未満の行（罫線や汚れの誤読など）と、
+ * 同じ内容の行の重複は除く。
+ */
+export function splitOcrLines(raw: string): string[] {
+  const lines = normalizeOcrText(raw)
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter((line) => (line.match(MEANINGFUL) ?? []).length >= 2);
+  return [...new Set(lines)];
 }

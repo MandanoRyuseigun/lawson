@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseOcrText } from "./parseOcrText";
+import { parseOcrText, splitOcrLines } from "./parseOcrText";
 
 describe("parseOcrText", () => {
   it("名前・価格・期間を取り出す", () => {
@@ -55,5 +55,31 @@ describe("parseOcrText", () => {
       emoji: "",
       section: "other",
     });
+  });
+});
+
+describe("splitOcrLines", () => {
+  it("実際の OCR の出力を、補正した行の一覧にする", () => {
+    // 実際に Tesseract.js が出力した文字列
+    expect(splitOcrLines("か ら あ げ ク ン\n20 円 引き\n11724( 火 )ー11730( 月 )\n")).toEqual([
+      "からあげクン",
+      "20円引き",
+      "11/24(火)〜11/30(月)",
+    ]);
+  });
+
+  it("空の行や、罫線・汚れの誤読のような行は除く", () => {
+    expect(splitOcrLines("超ハッピーすぎ！チャレンジ\n\n| ー_\n・\nあ\n盛りすぎチャレンジ開催")).toEqual([
+      "超ハッピーすぎ！チャレンジ",
+      "盛りすぎチャレンジ開催",
+    ]);
+  });
+
+  it("同じ内容の行は 1 つにする", () => {
+    expect(splitOcrLines("おせち予約受付中\nおせち予約受付中")).toEqual(["おせち予約受付中"]);
+  });
+
+  it("英数字の行の空白は 1 つにそろえて残す", () => {
+    expect(splitOcrLines("Ponta  ポイント  2倍\nL  チキ")).toEqual(["Pontaポイント2倍", "Lチキ"]);
   });
 });

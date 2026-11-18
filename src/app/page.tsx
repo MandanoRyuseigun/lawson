@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ItemCard } from "@/components/ItemCard";
 import { ItemForm } from "@/components/ItemForm";
 import { NoticeEditor } from "@/components/NoticeEditor";
+import { OcrPicker } from "@/components/OcrPicker";
 import { PhotoImport } from "@/components/PhotoImport";
+import { parseOcrText, splitOcrLines } from "@/lib/parseOcrText";
 import type { FFProduct } from "@/lib/lawsonFF";
 import { formatIsoDate, type WebSale } from "@/lib/lawsonSale";
 import {
@@ -99,6 +101,9 @@ export default function Home() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  // 写真から読み取った行（ピックアップ中）と、追加したときのお知らせ
+  const [ocrLines, setOcrLines] = useState<string[] | null>(null);
+  const [addedMessage, setAddedMessage] = useState("");
   const [weeklyNotes, setWeeklyNotes] = useState<WeeklyNotes>({});
   const [weather, setWeather] = useState<StoredWeather | null>(null);
   const [noticeText, setNoticeText] = useState("");
@@ -427,9 +432,32 @@ export default function Home() {
       <section className="section">
         <h2>③ 足りない情報を追加</h2>
         <p className="muted">{selectedLabel}開始の項目として追加します。</p>
-        {draft ? (
+        {addedMessage && <p className="status-ok">{addedMessage}</p>}
+        {ocrLines ? (
+          <OcrPicker
+            key={ocrLines.join("\n")}
+            lines={ocrLines}
+            onAddEach={(lines, section) => {
+              const added = lines.map((name) => ({
+                ...createSaleItem({ ...emptyFields, name, section }, "photo"),
+                startDate: selectedDate ?? undefined,
+              }));
+              setItems((prev) => [...prev, ...added]);
+              setOcrLines(null);
+              setAddedMessage(
+                `${added.length} 件を追加しました（${section === "main" ? "①" : "②"}の欄にあります。必要なら「編集」で直してください）。`,
+              );
+            }}
+            onCombine={(lines, section) => {
+              // 選んだ行から商品名・価格・期間を振り分けて、入力欄で確認してから追加する
+              setDraft({ fields: { ...parseOcrText(lines.join("\n")), section }, source: "photo", key: Date.now() });
+              setOcrLines(null);
+            }}
+            onCancel={() => setOcrLines(null)}
+          />
+        ) : draft ? (
           <>
-            {draft.source === "photo" && <p className="muted">読み取り結果です。間違いがないか確認してください。</p>}
+            {draft.source === "photo" && <p className="muted">選んだ行から入力欄に振り分けました。間違いがないか確認してください。</p>}
             <ItemForm
               key={draft.key}
               initial={draft.fields}
@@ -438,14 +466,26 @@ export default function Home() {
                 const item = createSaleItem(fields, draft.source);
                 setItems((prev) => [...prev, { ...item, startDate: selectedDate ?? undefined }]);
                 setDraft(null);
+                setAddedMessage(`「${item.name}」を追加しました。`);
               }}
               onCancel={() => setDraft(null)}
             />
           </>
         ) : (
           <div className="btn-row" style={{ flexDirection: "column" }}>
-            <PhotoImport onResult={(fields) => setDraft({ fields, source: "photo", key: Date.now() })} />
-            <button type="button" onClick={() => setDraft({ fields: emptyFields, source: "manual", key: Date.now() })}>
+            <PhotoImport
+              onResult={(rawText) => {
+                setAddedMessage("");
+                setOcrLines(splitOcrLines(rawText));
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setAddedMessage("");
+                setDraft({ fields: emptyFields, source: "manual", key: Date.now() });
+              }}
+            >
               ✏️ 手入力で追加
             </button>
           </div>
