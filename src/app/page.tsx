@@ -7,7 +7,17 @@ import { NoticeEditor } from "@/components/NoticeEditor";
 import { PhotoImport } from "@/components/PhotoImport";
 import type { FFProduct } from "@/lib/lawsonFF";
 import { formatIsoDate, type WebSale } from "@/lib/lawsonSale";
-import { FF_PREFIX, ffEntries, mergeWebEntries, SALE_PREFIX, saleEntries, type MergeResult } from "@/lib/mergeWebEntries";
+import {
+  FF_PREFIX,
+  ffEntries,
+  mergeWebEntries,
+  SALE_PREFIX,
+  saleEntries,
+  TOP_PREFIX,
+  topEntries,
+  type MergeResult,
+} from "@/lib/mergeWebEntries";
+import type { TopBanner } from "@/lib/lawsonTop";
 import { generateNotice, seasonalClosing } from "@/lib/notice";
 import { groupFF } from "@/lib/newRelease";
 import {
@@ -30,6 +40,7 @@ import { getTargetTuesday, toIsoDate } from "@/lib/targetTuesday";
 
 type Draft = { fields: SaleItemFields; source: "photo" | "manual"; key: number };
 type SalesResponse = { sales?: WebSale[]; error?: string };
+type TopResponse = { banners?: TopBanner[]; error?: string };
 type FFResponse = { products?: FFProduct[]; failed?: string[]; releaseDatesUnavailable?: boolean; error?: string };
 
 /** API から JSON を受け取る。通信に失敗したら error だけを持つ結果にする */
@@ -117,7 +128,9 @@ export default function Home() {
   const visibleItems = items.filter((i) => !i.startDate || i.startDate === selectedDate);
   const mainItems = visibleItems.filter((i) => sectionOf(i) === "main");
   const otherItems = visibleItems.filter((i) => sectionOf(i) === "other");
-  const visibleSaleCount = otherItems.filter((i) => i.source === "web").length;
+  const topItems = otherItems.filter((i) => i.id.startsWith(TOP_PREFIX));
+  const restItems = otherItems.filter((i) => !i.id.startsWith(TOP_PREFIX));
+  const visibleSaleCount = otherItems.filter((i) => i.id.startsWith(SALE_PREFIX)).length;
   const selectedMain = mainItems.filter((i) => i.selected).length;
   const selectedOther = otherItems.filter((i) => i.selected).length;
   const selectedLabel = selectedDate ? formatIsoDate(selectedDate) : "…";
@@ -155,9 +168,10 @@ export default function Home() {
     setStatus({ kind: "loading", message: "公式サイトから取得中…" });
     setDetailStatus("");
 
-    const [salesRes, ffRes] = await Promise.all([
+    const [salesRes, ffRes, topRes] = await Promise.all([
       getJson<SalesResponse>("/api/sales"),
       getJson<FFResponse>("/api/ff"),
+      getJson<TopResponse>("/api/top"),
     ]);
 
     let next = items;
@@ -182,8 +196,17 @@ export default function Home() {
       errors.push(`セール: ${salesRes.error ?? "取得に失敗しました。"}`);
     }
 
+    // トップページの告知は最後に反映し、その他欄の先頭に並べる
+    if (topRes.banners) {
+      const r = mergeWebEntries(next, topEntries(topRes.banners), TOP_PREFIX);
+      next = r.items;
+      messages.push(summarize("トップページ", r));
+    } else {
+      errors.push(`トップページ: ${topRes.error ?? "取得に失敗しました。"}`);
+    }
+
     setItems(next);
-    if (ffRes.products || salesRes.sales) {
+    if (ffRes.products || salesRes.sales || topRes.banners) {
       const now = new Date().toISOString();
       setFetchedAt(now);
       saveFetchedAt(now);
@@ -341,21 +364,35 @@ export default function Home() {
       </section>
 
       <section className="section">
-        <h2>② セールなど（その他欄）</h2>
+        <h2>② トップページ・セールなど（その他欄）</h2>
+        <p className="muted">
+          {otherItems.length} 件中 {selectedOther} 件を載せます
+        </p>
+
+        {topItems.length > 0 && (
+          <div>
+            <h3 className="group-title">
+              <span>🏠 トップページの告知</span>
+              <span className="muted">{topItems.filter((i) => i.selected).length} 件選択</span>
+            </h3>
+            <p className="muted">
+              ローソンが今いちばん推している情報です。最初から「載せる」にしています。名前が長いときは「編集」で短くしてください（更新しても編集した名前のまま残ります）。
+            </p>
+            {renderCards(topItems)}
+          </div>
+        )}
+
+        <h3 className="group-title">
+          <span>🏷️ セール・その他</span>
+          <span className="muted">{restItems.filter((i) => i.selected).length} 件選択</span>
+        </h3>
         {visibleSaleCount === 0 && (
           <p className="notice-box">
             {selectedLabel}開始のセールは、公式サイトにまだ載っていません。社内資料の写真や手入力で追加してください。
           </p>
         )}
         {detailStatus && <p className="muted">{detailStatus}</p>}
-        {otherItems.length > 0 && (
-          <>
-            <p className="muted">
-              {otherItems.length} 件中 {selectedOther} 件を載せます
-            </p>
-            {renderCards(otherItems)}
-          </>
-        )}
+        {restItems.length > 0 && renderCards(restItems)}
       </section>
 
       <section className="section">
