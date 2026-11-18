@@ -60,14 +60,16 @@
 
 ## コマンド
 
-プロジェクト初期化後に実際のコマンドへ更新すること。
-
 ```bash
-npm run dev     # 開発サーバー
-npm run build   # ビルド
-npm run lint    # Lint
-npm test        # テスト
+npm run dev          # 開発サーバー（http://localhost:3000）
+npm run build        # 本番ビルド
+npm run lint         # ESLint
+npm test             # テスト（Vitest、1回実行）
+npm run test:watch   # テスト（変更を監視して再実行）
 ```
+
+- ソースは `src/` 以下。画面は `src/app/`、ロジックは `src/lib/` に置き、テストは同じ場所に `*.test.ts` で置く。
+- スタイルは現状 CSS（`globals.css` とインラインスタイル）のみ。
 
 ## 言語
 
