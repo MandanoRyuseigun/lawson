@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OCR の言語データ（テスト実行時に自動でダウンロードされる）
+*.traineddata
