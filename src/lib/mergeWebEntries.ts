@@ -1,5 +1,6 @@
 import { ffEmoji, type FFCategoryKey, type FFProduct } from "./lawsonFF";
 import { formatPeriod, isAvailableInArea, type WebSale } from "./lawsonSale";
+import type { TopBanner } from "./lawsonTop";
 import type { NoticeSection, SaleItem } from "./saleItem";
 
 /** 公式サイトから取り込む 1 件（セール・FF 共通の形） */
@@ -14,11 +15,14 @@ export type WebEntry = {
   startDate?: string;
   targets?: string[];
   releaseDate?: string;
+  /** 初めて取り込んだときに「載せる」にしておくか */
+  defaultSelected?: boolean;
 };
 
 /** セール項目の id の頭。以前から保存されている項目に合わせて "web-" のまま */
 export const SALE_PREFIX = "web-";
 export const FF_PREFIX = "ff-";
+export const TOP_PREFIX = "top-";
 
 /** セールを取り込む形にする。お店の地域で実施されないものは除く */
 export function saleEntries(sales: WebSale[]): WebEntry[] {
@@ -49,6 +53,21 @@ export function ffEntries(products: FFProduct[]): WebEntry[] {
   }));
 }
 
+/**
+ * トップページの告知を取り込む形にする。ローソンが特に推している情報なので、最初から「載せる」にしておく。
+ * 予約受付中のような続いている告知も、開始日に関係なく毎週表示する。
+ */
+export function topEntries(banners: TopBanner[]): WebEntry[] {
+  return banners.map((b) => ({
+    id: `${TOP_PREFIX}${b.id}`,
+    name: b.title,
+    period: "",
+    url: b.url,
+    section: "other",
+    defaultSelected: true,
+  }));
+}
+
 export type MergeResult = {
   items: SaleItem[];
   added: number;
@@ -61,7 +80,7 @@ export type MergeResult = {
 /**
  * 公式サイトから取り込んだ項目を、今の一覧に反映する。対象は id が prefix で始まる項目だけ。
  * - 増えた項目には「新着」、名前や期間が変わった項目には「変更」の印を付ける（初回は付けない）
- * - 選択・重要・新発売・絵文字・補足など、画面で変えた内容は保つ
+ * - 選択・重要・新発売・絵文字・補足・名前など、画面で変えた内容は保つ
  * - サイトから消えた項目は外す。ほかの種類の項目や手入力・写真の項目には触れない
  */
 export function mergeWebEntries(current: SaleItem[], entries: WebEntry[], prefix: string): MergeResult {
@@ -79,11 +98,12 @@ export function mergeWebEntries(current: SaleItem[], entries: WebEntry[], prefix
       return {
         id: e.id,
         name: e.name,
+        siteName: e.name,
         price: "",
         period: e.period,
         note: "",
         source: "web",
-        selected: false,
+        selected: e.defaultSelected ?? false,
         important: false,
         section: e.section,
         emoji: e.emoji,
@@ -96,11 +116,16 @@ export function mergeWebEntries(current: SaleItem[], entries: WebEntry[], prefix
       };
     }
 
-    const isChanged = before.name !== e.name || before.period !== e.period;
+    // 前回のサイトでの名前（以前の保存データには siteName がないので name で代用）
+    const previousSiteName = before.siteName ?? before.name;
+    const isChanged = previousSiteName !== e.name || before.period !== e.period;
     if (isChanged) changed++;
+    // 画面で名前を編集していたら、その名前を保つ
+    const editedName = before.name !== previousSiteName;
     return {
       ...before,
-      name: e.name,
+      name: editedName ? before.name : e.name,
+      siteName: e.name,
       period: e.period,
       url: e.url,
       category: e.category,

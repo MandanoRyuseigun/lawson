@@ -38,6 +38,8 @@ export type SaleItem = {
   startDate?: string;
   /** 公式サイトの詳細ページ */
   url?: string;
+  /** 公式サイトでの名前。画面で名前を編集しても、更新時の変更の判定に使う */
+  siteName?: string;
   /** 直近の「更新」で増えた・変わった項目の印 */
   webStatus?: "new" | "changed";
 };

@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { FFProduct } from "./lawsonFF";
 import type { WebSale } from "./lawsonSale";
-import { FF_PREFIX, ffEntries, mergeWebEntries, SALE_PREFIX, saleEntries } from "./mergeWebEntries";
+import type { TopBanner } from "./lawsonTop";
+import {
+  FF_PREFIX,
+  ffEntries,
+  mergeWebEntries,
+  SALE_PREFIX,
+  saleEntries,
+  TOP_PREFIX,
+  topEntries,
+} from "./mergeWebEntries";
 import type { SaleItem } from "./saleItem";
 
 const sale = (id: string, title: string, start = "2026-11-24", end = "2026-11-30"): WebSale => ({
@@ -147,5 +156,55 @@ describe("mergeWebEntries（FF）", () => {
     }));
     const result = mergeFF(first, [ff("10_1996", "特撰　豚まん(醤油)", "chukaman")]);
     expect(result.items[0]).toMatchObject({ emoji: "🔥", newRelease: true, selected: true });
+  });
+});
+
+describe("mergeWebEntries（トップページ）", () => {
+  const banner = (id: string, title: string): TopBanner => ({ id, title, url: `https://www.lawson.co.jp/${id}/` });
+  const mergeTop = (current: SaleItem[], banners: TopBanner[]) =>
+    mergeWebEntries(current, topEntries(banners), TOP_PREFIX);
+
+  it("トップページの告知は最初から「載せる」にし、その他欄・開始日なしで取り込む", () => {
+    const result = mergeTop([], [banner("lab/campaign/osechi", "ローソンのおせち ご予約承り中！")]);
+    expect(result.items[0]).toMatchObject({
+      id: "top-lab/campaign/osechi",
+      name: "ローソンのおせち ご予約承り中！",
+      section: "other",
+      selected: true,
+    });
+    expect(result.items[0].startDate).toBeUndefined();
+  });
+
+  it("外した告知は、更新しても外したままにする", () => {
+    const first = mergeTop([], [banner("lab/campaign/hapilaw", "ローソンでハピろー！")]).items.map((i) => ({
+      ...i,
+      selected: false,
+    }));
+    const result = mergeTop(first, [banner("lab/campaign/hapilaw", "ローソンでハピろー！")]);
+    expect(result.items[0].selected).toBe(false);
+  });
+
+  it("文言が変わった告知には「変更」を付け、新しい文言にする", () => {
+    const first = mergeTop([], [banner("lab/campaign/christmas", "クリスマスケーキ ご予約承り中！")]).items;
+    const result = mergeTop(first, [banner("lab/campaign/christmas", "クリスマスケーキ 予約締切間近！")]);
+    expect(result.items[0]).toMatchObject({ name: "クリスマスケーキ 予約締切間近！", webStatus: "changed" });
+  });
+
+  it("画面で短く編集した名前は、更新しても上書きしない", () => {
+    const long = "盛りすぎ！チャレンジ。超ハッピーすぎ！チャレンジ。対象商品のお値段そのまま50％増量！";
+    const first = mergeTop([], [banner("lab/tsuushin", long)]).items.map((i) => ({
+      ...i,
+      name: "超ハッピーすぎ！チャレンジ！",
+    }));
+    const result = mergeTop(first, [banner("lab/tsuushin", long)]);
+    expect(result.items[0]).toMatchObject({ name: "超ハッピーすぎ！チャレンジ！" });
+    expect(result.items[0].webStatus).toBeUndefined();
+    expect(result.changed).toBe(0);
+  });
+
+  it("編集した後にサイトの文言が変わったら、名前は保ったまま「変更」を付ける", () => {
+    const first = mergeTop([], [banner("lab/x", "A キャンペーン 開催中")]).items.map((i) => ({ ...i, name: "A" }));
+    const result = mergeTop(first, [banner("lab/x", "A キャンペーン 最終週")]);
+    expect(result.items[0]).toMatchObject({ name: "A", webStatus: "changed" });
   });
 });

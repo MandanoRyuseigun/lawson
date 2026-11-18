@@ -21,6 +21,7 @@ function isSaleItem(value: unknown): value is SaleItem {
     optionalString(v.url) &&
     optionalString(v.emoji) &&
     optionalString(v.releaseDate) &&
+    optionalString(v.siteName) &&
     (v.section === undefined || v.section === "main" || v.section === "other") &&
     (v.newRelease === undefined || typeof v.newRelease === "boolean") &&
     (v.category === undefined || (typeof v.category === "string" && isFFCategory(v.category))) &&
