@@ -13,7 +13,10 @@ function isSaleItem(value: unknown): value is SaleItem {
     typeof v.note === "string" &&
     (v.source === "web" || v.source === "photo" || v.source === "manual") &&
     typeof v.selected === "boolean" &&
-    typeof v.important === "boolean"
+    typeof v.important === "boolean" &&
+    (v.startDate === undefined || typeof v.startDate === "string") &&
+    (v.url === undefined || typeof v.url === "string") &&
+    (v.webStatus === undefined || v.webStatus === "new" || v.webStatus === "changed")
   );
 }
 

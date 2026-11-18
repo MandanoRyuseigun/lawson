@@ -17,6 +17,12 @@ export type SaleItem = {
   selected: boolean;
   /** 重要項目として先頭に載せるか */
   important: boolean;
+  /** 開始日（YYYY-MM-DD）。公式サイトから取り込んだ項目のみ */
+  startDate?: string;
+  /** 公式サイトの詳細ページ */
+  url?: string;
+  /** 直近の「更新」で増えた・変わった項目の印 */
+  webStatus?: "new" | "changed";
 };
 
 /** 入力欄で扱う項目の中身 */
