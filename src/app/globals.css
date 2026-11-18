@@ -396,11 +396,13 @@ textarea.notice {
   gap: 8px;
 }
 
-.ocr-lines input[type="text"] {
+.ocr-lines textarea {
   margin-top: 0;
+  resize: none;
+  line-height: 1.5;
 }
 
-.ocr-lines li.is-picked input[type="text"] {
+.ocr-lines li.is-picked textarea {
   border-color: var(--accent);
 }
 
@@ -415,4 +417,31 @@ textarea.notice {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
+}
+
+/* 写真の上で読み取る範囲を囲む */
+.crop-area {
+  position: relative;
+  /* なぞっている間に画面がスクロールしないようにする */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.crop-area img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.crop-rect {
+  position: absolute;
+  border: 3px solid var(--accent);
+  background: rgba(77, 156, 240, 0.18);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }

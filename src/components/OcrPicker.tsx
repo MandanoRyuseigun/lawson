@@ -18,6 +18,13 @@ const SECTION_OPTIONS: { value: NoticeSection; label: string }[] = [
   { value: "other", label: "その他" },
 ];
 
+/** 入力欄の高さを中身に合わせる（描画のたびに呼ばれるので、文字を直しても追従する） */
+function fitHeight(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight + 2}px`;
+}
+
 /** 写真から読み取った文字を行ごとに表示し、必要な行を選んで直してから追加する */
 export function OcrPicker({ lines, onAddEach, onCombine, onCancel }: Props) {
   const [texts, setTexts] = useState(lines);
@@ -59,9 +66,11 @@ export function OcrPicker({ lines, onAddEach, onCombine, onCancel }: Props) {
             >
               {selected[i] ? "✓" : ""}
             </button>
-            <input
-              type="text"
+            {/* 長い行も全文が見えるよう、折り返して表示する */}
+            <textarea
               value={text}
+              rows={1}
+              ref={fitHeight}
               aria-label={`${i + 1} 行目の文字`}
               onChange={(e) => {
                 const value = e.target.value;

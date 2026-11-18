@@ -83,3 +83,39 @@ describe("splitOcrLines", () => {
     expect(splitOcrLines("Ponta  ポイント  2倍\nL  チキ")).toEqual(["Pontaポイント2倍", "Lチキ"]);
   });
 });
+
+describe("splitOcrLines（店舗資料の写真）", () => {
+  // いただいた店舗資料の写真の《次週》の部分を、実際に Tesseract.js で読み取った結果
+  const raw = [
+    "を 次 週 ゃ",
+    "",
+    "ロ HOTFF : 黄金 チキ ン 骨 つき / レ ッ ド 骨 つ き 新 発売 |",
+    "・11724-11730 チキ ン 購 入 で 黄金 チキ ン 100 円 引 レ シー ト",
+    "",
+    "ロロ 中 華 ま ん : 焼豚 玉子 まん 新 発 売",
+    "",
+    "口中 華 ま ん :・ 八 ム チー ズ マ ヨ ! ーー 科",
+  ].join("\n");
+  const lines = splitOcrLines(raw);
+
+  it("行頭のチェック欄（□ が ロ・ロロ・口 に化けたもの）と行末の「|」を除く", () => {
+    expect(lines).toContain("HOTFF:黄金チキン骨つき/レッド骨つき新発売");
+    expect(lines).toContain("中華まん:焼豚玉子まん新発売");
+  });
+
+  it("期間の「/」が「7」に化けたものを直す（11724-11730 → 11/24-11/30）", () => {
+    expect(lines).toContain("11/24-11/30チキン購入で黄金チキン100円引レシート");
+  });
+
+  it("「口」が次の文字にくっついていても除く", () => {
+    expect(lines.some((l) => l.startsWith("中華まん:・八ムチーズマヨ"))).toBe(true);
+  });
+
+  it("「ロ」で始まる商品名（ロールケーキなど）は削らない", () => {
+    expect(splitOcrLines("ロ ー ル ケ ー キ 新 発 売")).toEqual(["ロールケーキ新発売"]);
+  });
+
+  it("日付として成り立たない数字は直さない", () => {
+    expect(splitOcrLines("品番 98765-43210")).toEqual(["品番98765-43210"]);
+  });
+});
