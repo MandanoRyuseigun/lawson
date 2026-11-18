@@ -23,7 +23,7 @@ const options = {
 };
 
 describe("generateNotice", () => {
-  it("普段の告知文と同じ形で作る", () => {
+  it("普段の告知文と同じ形で作り、その他の項目にも内容に合った絵文字を付ける", () => {
     const text = generateNotice(
       [
         item({ name: "でからあげクン　夢のミックス味", emoji: "🐔", section: "main", newRelease: true }),
@@ -44,9 +44,9 @@ describe("generateNotice", () => {
         "🥟中華まん　特選豚まん（醤油）　新発売",
         "",
         "その他",
-        "超ハッピーすぎ！チャレンジ！",
+        "🎉超ハッピーすぎ！チャレンジ！",
         "→盛り過ぎチャレンジ開催",
-        "年末催事予約受付中",
+        "🎍年末催事予約受付中",
         "",
         "朝晩の冷え込みも激しいので、体調管理に気をつけて頑張っていきましょう！",
       ].join("\n"),
@@ -86,8 +86,13 @@ describe("generateNotice", () => {
       ],
       options,
     );
-    expect(text).toContain("からあげクン\nＬチキ");
-    expect(text).toContain("その他\nコーヒーセール\nお菓子セール");
+    expect(text).toContain("📌からあげクン\n📌Ｌチキ");
+    expect(text).toContain("その他\n🉐コーヒーセール\n🉐お菓子セール");
+  });
+
+  it("編集で入れた絵文字は、名前から選ぶ絵文字より優先する", () => {
+    const text = generateNotice([item({ name: "お菓子セール", emoji: "🍫" })], options);
+    expect(text).toContain("🍫お菓子セール");
   });
 
   it("選ばれていない項目は載せない", () => {
@@ -106,7 +111,7 @@ describe("generateNotice", () => {
 
   it("メイン欄が空なら、その他の項目を見出しなしで続ける", () => {
     const text = generateNotice([item({ name: "お菓子セール" })], options);
-    expect(text).toContain("11/17からのお知らせです。\nお菓子セール");
+    expect(text).toContain("11/17からのお知らせです。\n🉐お菓子セール");
     expect(text).not.toContain("その他");
   });
 

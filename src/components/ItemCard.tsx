@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { itemEmoji } from "@/lib/itemEmoji";
 import { formatIsoDate } from "@/lib/lawsonSale";
 import { releaseWeek } from "@/lib/newRelease";
 import { fieldsOf, sectionOf, type SaleItem, type SaleItemFields } from "@/lib/saleItem";
@@ -64,7 +65,7 @@ export function ItemCard(props: Props) {
         {item.webStatus === "changed" && <span className="badge badge-changed">変更</span>}
         {week === 1 && <span className="badge badge-release">新発売</span>}
         {week === 2 && <span className="badge badge-release">新発売 2週目</span>}
-        {item.emoji}
+        {itemEmoji(item)}
         {item.name}
         <span className="item-source">{SOURCE_LABEL[item.source]}</span>
       </p>

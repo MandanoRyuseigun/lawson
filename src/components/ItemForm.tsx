@@ -53,7 +53,7 @@ export function ItemForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
       </div>
 
       <label>
-        頭に付ける絵文字
+        頭に付ける絵文字（空なら名前から自動で選びます）
         <input type="text" value={fields.emoji} onChange={update("emoji")} placeholder="例: 🐔" />
       </label>
       <label>

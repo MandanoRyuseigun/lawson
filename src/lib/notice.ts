@@ -1,3 +1,4 @@
+import { itemEmoji } from "./itemEmoji";
 import { releaseLabel, releaseWeek } from "./newRelease";
 import { sectionOf, type SaleItem } from "./saleItem";
 
@@ -10,9 +11,9 @@ export type NoticeOptions = {
   closing: string;
 };
 
-/** 1 項目を告知文の行にする。入力された値だけを使い、空の欄は出さない */
+/** 1 項目を告知文の行にする。頭に絵文字を付け、入力された値だけを使い、空の欄は出さない */
 function formatItem(item: SaleItem, startDate: string): string {
-  let line = `${item.emoji ?? ""}${item.name}`;
+  let line = `${itemEmoji(item)}${item.name}`;
   const label = releaseLabel(releaseWeek(item, startDate));
   if (label) line += `　${label}`;
   if (item.price) line += `　${item.price}`;
