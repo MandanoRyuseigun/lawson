@@ -13,6 +13,7 @@ export type WebEntry = {
   category?: FFCategoryKey;
   startDate?: string;
   targets?: string[];
+  releaseDate?: string;
 };
 
 /** セール項目の id の頭。以前から保存されている項目に合わせて "web-" のまま */
@@ -44,6 +45,7 @@ export function ffEntries(products: FFProduct[]): WebEntry[] {
     emoji: ffEmoji(p.name, p.category),
     category: p.category,
     targets: p.price ? [`標準価格 ${p.price}`] : undefined,
+    releaseDate: p.releaseDate,
   }));
 }
 
@@ -87,6 +89,7 @@ export function mergeWebEntries(current: SaleItem[], entries: WebEntry[], prefix
         emoji: e.emoji,
         category: e.category,
         targets: e.targets,
+        releaseDate: e.releaseDate,
         startDate: e.startDate,
         url: e.url,
         webStatus: isFirstFetch ? undefined : "new",
@@ -106,6 +109,8 @@ export function mergeWebEntries(current: SaleItem[], entries: WebEntry[], prefix
       emoji: before.emoji ?? e.emoji,
       // セールの対象商品は詳細ページから別に取るので、取り込み済みのものを残す
       targets: e.targets ?? before.targets,
+      // 新商品一覧から外れても（約 3 週間で外れる）、一度確認できた発売日は残す
+      releaseDate: e.releaseDate ?? before.releaseDate,
       webStatus: isChanged ? "changed" : undefined,
     };
   });

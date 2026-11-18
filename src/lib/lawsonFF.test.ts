@@ -26,6 +26,10 @@ describe("parseFFCategory", () => {
     expect(products.map((p) => p.name)).not.toContain("コメント内の商品");
   });
 
+  it("デリバリー専用の商品は除く", () => {
+    expect(products.map((p) => p.name)).not.toContain("フライドポテト");
+  });
+
   it("想定と違う HTML なら空にする", () => {
     expect(parseFFCategory("<main></main>", "fry")).toEqual([]);
   });

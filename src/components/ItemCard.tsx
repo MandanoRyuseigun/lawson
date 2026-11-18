@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { formatIsoDate } from "@/lib/lawsonSale";
+import { releaseWeek } from "@/lib/newRelease";
 import { fieldsOf, sectionOf, type SaleItem, type SaleItemFields } from "@/lib/saleItem";
 import { ItemForm } from "./ItemForm";
 
@@ -15,6 +17,8 @@ const TARGETS_PREVIEW = 3;
 
 type Props = {
   item: SaleItem;
+  /** 表示中の告知の開始日。新商品の何週目かの表示に使う */
+  startDate: string | null;
   editing: boolean;
   onToggleSelected: () => void;
   onToggleImportant: () => void;
@@ -38,19 +42,28 @@ export function ItemCard(props: Props) {
   }
 
   const isMain = sectionOf(item) === "main";
+  const week = props.startDate ? releaseWeek(item, props.startDate) : null;
   const classes = ["item", !item.selected && "is-off", item.selected && item.important && "is-important"]
     .filter(Boolean)
     .join(" ");
   const targets = item.targets ?? [];
   const visibleTargets = showAllTargets ? targets : targets.slice(0, TARGETS_PREVIEW);
-  const extra = [item.price, item.note && `→${item.note}`, item.period].filter(Boolean).join("\n");
+  const extra = [
+    item.price,
+    item.note && `→${item.note}`,
+    item.period,
+    item.releaseDate && `発売日 ${formatIsoDate(item.releaseDate)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return (
     <li className={classes}>
       <p className="item-name">
         {item.webStatus === "new" && <span className="badge badge-new">新着</span>}
         {item.webStatus === "changed" && <span className="badge badge-changed">変更</span>}
-        {item.newRelease && <span className="badge badge-release">新発売</span>}
+        {week === 1 && <span className="badge badge-release">新発売</span>}
+        {week === 2 && <span className="badge badge-release">新発売 2週目</span>}
         {item.emoji}
         {item.name}
         <span className="item-source">{SOURCE_LABEL[item.source]}</span>
@@ -82,7 +95,8 @@ export function ItemCard(props: Props) {
         <button type="button" className="toggle" aria-pressed={item.selected} onClick={props.onToggleSelected}>
           {item.selected ? "✓ 載せる" : "載せない"}
         </button>
-        {isMain && (
+        {/* 発売日が分かる商品は自動で判定するので、手動の印は発売日が分からない商品だけ */}
+        {isMain && !item.releaseDate && (
           <button
             type="button"
             className="toggle toggle-release"

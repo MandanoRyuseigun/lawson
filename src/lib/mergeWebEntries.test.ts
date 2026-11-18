@@ -131,6 +131,13 @@ describe("mergeWebEntries（FF）", () => {
     expect(result.isFirstFetch).toBe(true);
   });
 
+  it("発売日を取り込み、新商品一覧から外れた後も残す", () => {
+    const first = mergeFF([], [{ ...ff("10_1996", "抹茶ラテ", "coffee"), releaseDate: "2026-11-10" }]).items;
+    expect(first[0].releaseDate).toBe("2026-11-10");
+    const later = mergeFF(first, [ff("10_1996", "抹茶ラテ", "coffee")]).items;
+    expect(later[0].releaseDate).toBe("2026-11-10");
+  });
+
   it("画面で変えた絵文字や新発売の印は更新しても保つ", () => {
     const first = mergeFF([], [ff("10_1996", "特撰　豚まん(醤油)", "chukaman")]).items.map((i) => ({
       ...i,

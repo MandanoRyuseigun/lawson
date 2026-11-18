@@ -1,8 +1,9 @@
+import { releaseLabel, releaseWeek } from "./newRelease";
 import { sectionOf, type SaleItem } from "./saleItem";
 
 export type NoticeOptions = {
-  /** 開始日の表示（例: "11/17"） */
-  dateLabel: string;
+  /** 告知の開始日（YYYY-MM-DD）。新商品の何週目かの判定にも使う */
+  startDate: string;
   /** 前週のメインの取り組み（例: 「からあげクンmilkコラボの拡販」） */
   thanks: string;
   /** 結びの挨拶 */
@@ -10,17 +11,26 @@ export type NoticeOptions = {
 };
 
 /** 1 項目を告知文の行にする。入力された値だけを使い、空の欄は出さない */
-function formatItem(item: SaleItem): string {
+function formatItem(item: SaleItem, startDate: string): string {
   let line = `${item.emoji ?? ""}${item.name}`;
-  if (item.newRelease) line += "　新発売";
+  const label = releaseLabel(releaseWeek(item, startDate));
+  if (label) line += `　${label}`;
   if (item.price) line += `　${item.price}`;
   if (item.note) line += `\n→${item.note}`;
   return line;
 }
 
-/** ⭐重要の項目を先に、それ以外は元の順で並べる */
-function importantFirst(items: SaleItem[]): SaleItem[] {
-  return [...items.filter((i) => i.important), ...items.filter((i) => !i.important)];
+/** ⭐重要 → 新発売（1 週目） → 新発売（2 週目） → それ以外 の順に並べる（同じ順位の中は元の順） */
+function orderForNotice(items: SaleItem[], startDate: string): SaleItem[] {
+  const rank = (i: SaleItem) => {
+    if (i.important) return 0;
+    const week = releaseWeek(i, startDate);
+    return week === 1 ? 1 : week === 2 ? 2 : 3;
+  };
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => rank(a.item) - rank(b.item) || a.index - b.index)
+    .map(({ item }) => item);
 }
 
 /**
@@ -29,21 +39,23 @@ function importantFirst(items: SaleItem[]): SaleItem[] {
  */
 export function generateNotice(items: SaleItem[], options: NoticeOptions): string {
   const selected = items.filter((item) => item.selected && item.name.trim() !== "");
-  const main = importantFirst(selected.filter((i) => sectionOf(i) === "main"));
-  const others = importantFirst(selected.filter((i) => sectionOf(i) === "other"));
+  const { startDate } = options;
+  const format = (item: SaleItem) => formatItem(item, startDate);
+  const main = orderForNotice(selected.filter((i) => sectionOf(i) === "main"), startDate);
+  const others = orderForNotice(selected.filter((i) => sectionOf(i) === "other"), startDate);
 
   const thanks = options.thanks.trim();
   const blocks: string[] = [
     `お疲れ様です。\n今週も${thanks}ありがとうございました🙇‍♂️`,
   ];
 
-  const announcement = [`${options.dateLabel}からのお知らせです。`, ...main.map(formatItem)];
+  const announcement = [`${formatMonthDay(startDate)}からのお知らせです。`, ...main.map(format)];
   // メイン欄が空なら、その他の項目を見出しなしでお知らせの下に続ける
-  if (main.length === 0) announcement.push(...others.map(formatItem));
+  if (main.length === 0) announcement.push(...others.map(format));
   blocks.push(announcement.join("\n"));
 
   if (main.length > 0 && others.length > 0) {
-    blocks.push(["その他", ...others.map(formatItem)].join("\n"));
+    blocks.push(["その他", ...others.map(format)].join("\n"));
   }
 
   const closing = options.closing.trim();

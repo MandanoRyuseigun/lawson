@@ -5,10 +5,11 @@ import { ItemCard } from "@/components/ItemCard";
 import { ItemForm } from "@/components/ItemForm";
 import { NoticeEditor } from "@/components/NoticeEditor";
 import { PhotoImport } from "@/components/PhotoImport";
-import { FF_CATEGORIES, type FFProduct } from "@/lib/lawsonFF";
+import type { FFProduct } from "@/lib/lawsonFF";
 import { formatIsoDate, type WebSale } from "@/lib/lawsonSale";
 import { FF_PREFIX, ffEntries, mergeWebEntries, SALE_PREFIX, saleEntries, type MergeResult } from "@/lib/mergeWebEntries";
-import { formatMonthDay, generateNotice, seasonalClosing } from "@/lib/notice";
+import { generateNotice, seasonalClosing } from "@/lib/notice";
+import { groupFF } from "@/lib/newRelease";
 import {
   applyFields,
   createSaleItem,
@@ -29,7 +30,7 @@ import { getTargetTuesday, toIsoDate } from "@/lib/targetTuesday";
 
 type Draft = { fields: SaleItemFields; source: "photo" | "manual"; key: number };
 type SalesResponse = { sales?: WebSale[]; error?: string };
-type FFResponse = { products?: FFProduct[]; failed?: string[]; error?: string };
+type FFResponse = { products?: FFProduct[]; failed?: string[]; releaseDatesUnavailable?: boolean; error?: string };
 
 /** API から JSON を受け取る。通信に失敗したら error だけを持つ結果にする */
 async function getJson<T extends { error?: string }>(url: string): Promise<T> {
@@ -40,9 +41,6 @@ async function getJson<T extends { error?: string }>(url: string): Promise<T> {
   }
 }
 type Status = { kind: "idle" | "loading" | "done" | "error"; message: string };
-
-/** FF の各カテゴリで、最初に表示する件数（掲載の新しい順） */
-const FF_PREVIEW = 5;
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -171,6 +169,7 @@ export default function Home() {
       next = r.items;
       messages.push(summarize("FF", r));
       if (ffRes.failed && ffRes.failed.length > 0) errors.push("FF の一部のカテゴリを取得できませんでした。");
+      if (ffRes.releaseDatesUnavailable) errors.push("新商品の発売日を確認できませんでした。");
     } else {
       errors.push(`FF: ${ffRes.error ?? "取得に失敗しました。"}`);
     }
@@ -205,6 +204,7 @@ export default function Home() {
           <ItemCard
             key={item.id}
             item={item}
+            startDate={selectedDate}
             editing={editingId === item.id}
             onToggleSelected={() => updateItem(item.id, { selected: !item.selected })}
             onToggleImportant={() =>
@@ -227,46 +227,64 @@ export default function Home() {
     );
   }
 
-  /** FF をカテゴリごとに表示する。新着・選択中のものは折りたたんでいても表示する */
+  /** FF を新商品の週ごとに表示する。定番は選択中・新着のものだけ表示し、残りは折りたたむ */
   function renderFFGroups() {
+    const startDate = selectedDate ?? "";
+    const webFF = mainItems.filter((i) => i.category);
+    const { week1, week2, unconfirmed, regular } = groupFF(webFF, startDate);
+    const manual = mainItems.filter((i) => !i.category);
+    const regularExpanded = expandedGroups.regular ?? false;
+    const regularShown = regularExpanded ? regular : regular.filter((i) => i.selected || i.webStatus === "new");
+
     const groups = [
-      ...FF_CATEGORIES.map((c) => ({
-        key: c.key,
-        label: `${c.emoji} ${c.label}`,
-        list: mainItems.filter((i) => i.category === c.key),
-      })),
-      { key: "others", label: "✏️ 手入力・写真など", list: mainItems.filter((i) => !i.category) },
+      { key: "week1", label: "🆕 新商品（1週目）", list: week1, hint: "" },
+      { key: "week2", label: "🆕 新商品（2週目）", list: week2, hint: "告知文では「新発売（2週目）」と載ります。" },
+      {
+        key: "unconfirmed",
+        label: "❓ 発売日を確認できない新しい掲載",
+        list: unconfirmed,
+        hint: "公式サイトの新商品一覧に載っていない商品です（これから発売の可能性があります）。新発売なら「🆕 新発売」を押してください。",
+      },
+      { key: "manual", label: "✏️ 手入力・写真など", list: manual, hint: "" },
     ].filter((g) => g.list.length > 0);
 
-    if (groups.length === 0) {
+    if (webFF.length === 0 && manual.length === 0) {
       return <p className="muted">まだ FF の情報がありません。「更新」を押すと公式サイトから取り込みます。</p>;
     }
 
-    return groups.map((group) => {
-      const expanded = expandedGroups[group.key] ?? false;
-      const shown = expanded
-        ? group.list
-        : group.list.filter((item, index) => index < FF_PREVIEW || item.selected || item.webStatus === "new");
-      const hidden = group.list.length - shown.length;
-      return (
-        <div key={group.key}>
-          <h3 className="group-title">
-            <span>{group.label}</span>
-            <span className="muted">{group.list.filter((i) => i.selected).length} 件選択</span>
-          </h3>
-          {renderCards(shown)}
-          {(hidden > 0 || expanded) && (
+    return (
+      <>
+        {groups.map((group) => (
+          <div key={group.key}>
+            <h3 className="group-title">
+              <span>{group.label}</span>
+              <span className="muted">{group.list.filter((i) => i.selected).length} 件選択</span>
+            </h3>
+            {group.hint && <p className="muted">{group.hint}</p>}
+            {renderCards(group.list)}
+          </div>
+        ))}
+        {webFF.length > 0 && week1.length + week2.length === 0 && (
+          <p className="notice-box">{selectedLabel}開始の週に当たる FF の新商品は、公式サイトの新商品一覧にありません。</p>
+        )}
+        {regular.length > 0 && (
+          <div>
+            <h3 className="group-title">
+              <span>📦 定番 FF</span>
+              <span className="muted">{regular.filter((i) => i.selected).length} 件選択</span>
+            </h3>
+            {regularShown.length > 0 && renderCards(regularShown)}
             <button
               type="button"
               className="link-button"
-              onClick={() => setExpandedGroups((prev) => ({ ...prev, [group.key]: !expanded }))}
+              onClick={() => setExpandedGroups((prev) => ({ ...prev, regular: !regularExpanded }))}
             >
-              {expanded ? "新しい順の上位だけ表示" : `ほか ${hidden} 件を表示`}
+              {regularExpanded ? "選択中のものだけ表示" : `定番 FF を表示（${regular.length} 件）`}
             </button>
-          )}
-        </div>
-      );
-    });
+          </div>
+        )}
+      </>
+    );
   }
 
   return (
@@ -304,7 +322,7 @@ export default function Home() {
       <section className="section">
         <h2>① FF（メイン欄）</h2>
         <p className="muted">
-          {selectedMain} 件を載せます。新発売のものは「🆕 新発売」を押してください（公式サイトに発売日がないため自動では付きません）。
+          {selectedMain} 件を載せます。新商品は公式サイトの新商品一覧の発売日で判定し、2 週目まで「新発売」と載せます。
         </p>
         {selectedMain > 0 && (
           <button
@@ -390,7 +408,7 @@ export default function Home() {
           onGenerate={() =>
             setNoticeText(
               generateNotice(visibleItems, {
-                dateLabel: selectedDate ? formatMonthDay(selectedDate) : "",
+                startDate: selectedDate ?? "",
                 thanks,
                 closing,
               }),

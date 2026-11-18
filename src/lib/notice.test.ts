@@ -17,7 +17,7 @@ function item(overrides: Partial<SaleItem>): SaleItem {
 }
 
 const options = {
-  dateLabel: "11/17",
+  startDate: "2026-11-17",
   thanks: "からあげクンmilkコラボの拡販",
   closing: "朝晩の冷え込みも激しいので、体調管理に気をつけて頑張っていきましょう！",
 };
@@ -51,6 +51,29 @@ describe("generateNotice", () => {
         "朝晩の冷え込みも激しいので、体調管理に気をつけて頑張っていきましょう！",
       ].join("\n"),
     );
+  });
+
+  it("発売日から 2 週目の商品には（2週目）と付け、1 週目の後ろに並べる", () => {
+    const text = generateNotice(
+      [
+        item({ name: "抹茶ショコラあずきまん", emoji: "🥟", section: "main", releaseDate: "2026-11-10" }),
+        item({ name: "からあげクン　新味", emoji: "🐔", section: "main", releaseDate: "2026-11-17" }),
+        item({ name: "Ｌチキ", emoji: "🍗", section: "main" }),
+      ],
+      options,
+    );
+    expect(text).toContain(
+      ["🐔からあげクン　新味　新発売", "🥟抹茶ショコラあずきまん　新発売（2週目）", "🍗Ｌチキ"].join("\n"),
+    );
+  });
+
+  it("新商品の期間（2 週間）を過ぎた商品には新発売を付けない", () => {
+    const text = generateNotice(
+      [item({ name: "チーズピザまん", section: "main", releaseDate: "2026-11-03", newRelease: true })],
+      options,
+    );
+    expect(text).toContain("チーズピザまん\n");
+    expect(text).not.toContain("新発売");
   });
 
   it("⭐重要の項目は各欄の先頭に置く", () => {

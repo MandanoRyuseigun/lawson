@@ -372,3 +372,10 @@ textarea.notice {
 .group-title:first-of-type {
   margin-top: 4px;
 }
+
+/* ボタンが 3 つ並んでも文字の途中で折り返さない */
+.item .btn-row > button {
+  white-space: nowrap;
+  padding-left: 6px;
+  padding-right: 6px;
+}

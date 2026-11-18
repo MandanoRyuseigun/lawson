@@ -20,6 +20,8 @@ export type FFProduct = {
   price: string;
   category: FFCategoryKey;
   url: string;
+  /** 発売日（YYYY-MM-DD）。新商品一覧に載っている場合のみ */
+  releaseDate?: string;
 };
 
 export function isFFCategory(key: string): key is FFCategoryKey {
@@ -58,6 +60,8 @@ export function parseFFCategory(html: string, category: FFCategoryKey): FFProduc
     const name = htmlToText(rawName);
     if (!name || products.has(id)) continue;
     const priceMatch = rest.match(/<p class="price">([\s\S]*?)<\/p>/);
+    // デリバリー専用の商品（店頭では販売しない）は除く
+    if (priceMatch && priceMatch[1].includes("デリバリー")) continue;
     products.set(id, {
       id,
       name,

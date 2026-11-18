@@ -26,8 +26,10 @@ export type SaleItem = {
   section?: NoticeSection;
   /** 告知文で頭に付ける絵文字 */
   emoji?: string;
-  /** 「新発売」を付けるか */
+  /** 「新発売」を付けるか（発売日が分からない項目で手動で付ける） */
   newRelease?: boolean;
+  /** 発売日（YYYY-MM-DD）。公式サイトの新商品一覧で確認できた FF のみ */
+  releaseDate?: string;
   /** FF のカテゴリ。公式サイトから取り込んだ FF のみ */
   category?: FFCategoryKey;
   /** 対象商品や標準価格など、確認用の情報（告知文には載せない） */
