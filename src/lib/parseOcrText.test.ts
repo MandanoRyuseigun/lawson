@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseOcrText, splitOcrLines } from "./parseOcrText";
+import { parseOcrText, splitOcrLines, stripCategoryLabel } from "./parseOcrText";
 
 describe("parseOcrText", () => {
   it("名前・価格・期間を取り出す", () => {
@@ -98,9 +98,9 @@ describe("splitOcrLines（店舗資料の写真）", () => {
   ].join("\n");
   const lines = splitOcrLines(raw);
 
-  it("行頭のチェック欄（□ が ロ・ロロ・口 に化けたもの）と行末の「|」を除く", () => {
-    expect(lines).toContain("HOTFF:黄金チキン骨つき/レッド骨つき新発売");
-    expect(lines).toContain("中華まん:焼豚玉子まん新発売");
+  it("行頭のチェック欄（□ が ロ・ロロ・口 に化けたもの）・「HOTFF:」などの見出し・行末の「|」を除く", () => {
+    expect(lines).toContain("黄金チキン骨つき/レッド骨つき新発売");
+    expect(lines).toContain("焼豚玉子まん新発売");
   });
 
   it("期間の「/」が「7」に化けたものを直す（11724-11730 → 11/24-11/30）", () => {
@@ -108,7 +108,7 @@ describe("splitOcrLines（店舗資料の写真）", () => {
   });
 
   it("「口」が次の文字にくっついていても除く", () => {
-    expect(lines.some((l) => l.startsWith("中華まん:・八ムチーズマヨ"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("八ムチーズマヨ"))).toBe(true);
   });
 
   it("「ロ」で始まる商品名（ロールケーキなど）は削らない", () => {
@@ -117,5 +117,19 @@ describe("splitOcrLines（店舗資料の写真）", () => {
 
   it("日付として成り立たない数字は直さない", () => {
     expect(splitOcrLines("品番 98765-43210")).toEqual(["品番98765-43210"]);
+  });
+});
+
+describe("stripCategoryLabel", () => {
+  it("頭の「HOTFF:」「常温FF:」「中華まん:」のような見出しを除く", () => {
+    expect(stripCategoryLabel("HOTFF:黄金チキン骨つき/レッド骨つき新発売")).toBe("黄金チキン骨つき/レッド骨つき新発売");
+    expect(stripCategoryLabel("常温FF：紅しょうが唐揚げ串新発売")).toBe("紅しょうが唐揚げ串新発売");
+    expect(stripCategoryLabel("中華まん : ・ハムチーズマヨ")).toBe("ハムチーズマヨ");
+  });
+
+  it("見出しのない名前や、時刻のような数字のコロンはそのまま", () => {
+    expect(stripCategoryLabel("中華まん　特選豚まん（醤油）")).toBe("中華まん　特選豚まん（醤油）");
+    expect(stripCategoryLabel("10:00から販売開始")).toBe("10:00から販売開始");
+    expect(stripCategoryLabel("HOTFF:")).toBe("HOTFF:");
   });
 });

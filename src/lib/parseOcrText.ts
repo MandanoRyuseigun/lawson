@@ -93,6 +93,18 @@ export function splitOcrLines(raw: string): string[] {
         .replace(/[\s|｜」_]+$/, "")
         .trim(),
     )
+    .map(stripCategoryLabel)
     .filter((line) => (line.match(MEANINGFUL) ?? []).length >= 2);
   return [...new Set(lines)];
+}
+
+/**
+ * 名前の頭の「HOTFF:」「常温FF:」「中華まん:」のような見出しを除く。
+ * 公式サイトからはホット／常温の区別がつかないため、表記をそろえて消す（種類は頭の絵文字で分かる）。
+ * 時刻（「10:00」）のように数字で始まるものや、見出しの後ろに何もないものはそのまま。
+ */
+export function stripCategoryLabel(name: string): string {
+  const m = name.match(/^\s*([^:：\s]{1,8})\s*[:：]\s*[・･]?\s*(.+)$/);
+  if (!m || /^\d/.test(m[1])) return name;
+  return m[2].trim();
 }

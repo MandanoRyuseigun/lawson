@@ -76,6 +76,18 @@ describe("generateNotice", () => {
     expect(text).not.toContain("新発売");
   });
 
+  it("名前の頭の「HOTFF:」「中華まん:」のような見出しは、公式サイトの表記にそろえて除く", () => {
+    const text = generateNotice(
+      [
+        item({ name: "HOTFF:黄金チキン骨つき/レッド骨つき新発売", section: "main" }),
+        item({ name: "中華まん:焼豚玉子まん新発売", section: "main" }),
+      ],
+      options,
+    );
+    expect(text).toContain("🍗黄金チキン骨つき/レッド骨つき新発売\n🥟焼豚玉子まん新発売");
+    expect(text).not.toContain("HOTFF");
+  });
+
   it("⭐重要の項目は各欄の先頭に置く", () => {
     const text = generateNotice(
       [

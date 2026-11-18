@@ -1,3 +1,4 @@
+import { stripCategoryLabel } from "./parseOcrText";
 import type { SaleItem } from "./saleItem";
 
 /**
@@ -5,9 +6,7 @@ import type { SaleItem } from "./saleItem";
  * 全角・半角をそろえ、資料の頭書き（「中華まん:」「HOTFF:」など）・「新発売」・期間・絵文字・記号・空白を除く。
  */
 export function normalizeForMatch(name: string): string {
-  return name
-    .normalize("NFKC")
-    .replace(/^[^:：]{1,8}[:：]/, "") // 「中華まん:」「常温FF:」のような頭書き
+  return stripCategoryLabel(name.normalize("NFKC")) // 「中華まん:」「常温FF:」のような頭書き
     .replace(/新発売(\(2週目\))?|新商品|発売/g, "")
     .replace(/\d{1,2}\/\d{1,2}(\([日月火水木金土]\))?\s*[-〜~ー]\s*(\d{1,2}\/)?\d{1,2}(\([日月火水木金土]\))?/g, "")
     .replace(/[^\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}ーA-Za-z0-9]/gu, "")

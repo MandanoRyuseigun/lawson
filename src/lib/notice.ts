@@ -1,5 +1,6 @@
 import { itemEmoji } from "./itemEmoji";
 import { releaseLabel, releaseWeek } from "./newRelease";
+import { stripCategoryLabel } from "./parseOcrText";
 import { sectionOf, type SaleItem } from "./saleItem";
 
 export type NoticeOptions = {
@@ -13,7 +14,8 @@ export type NoticeOptions = {
 
 /** 1 項目を告知文の行にする。頭に絵文字を付け、入力された値だけを使い、空の欄は出さない */
 function formatItem(item: SaleItem, startDate: string): string {
-  let line = `${itemEmoji(item)}${item.name}`;
+  // 「HOTFF:」「中華まん:」のような見出しは、公式サイトの表記にそろえて除く
+  let line = `${itemEmoji(item)}${stripCategoryLabel(item.name)}`;
   const label = releaseLabel(releaseWeek(item, startDate));
   if (label) line += `　${label}`;
   if (item.price) line += `　${item.price}`;
