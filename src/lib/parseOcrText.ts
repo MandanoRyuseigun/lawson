@@ -53,5 +53,5 @@ export function parseOcrText(raw: string): SaleItemFields {
       .map((line) => line.replace(PERIOD_PATTERN, "").replace(PRICE_PATTERN, "").trim())
       .find((rest) => rest.length >= 2) ?? "";
 
-  return { name, price, period, note: "" };
+  return { name, price, period, note: "", emoji: "", section: "other" };
 }

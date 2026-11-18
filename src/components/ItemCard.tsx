@@ -1,6 +1,7 @@
 "use client";
 
-import type { SaleItem, SaleItemFields } from "@/lib/saleItem";
+import { useState } from "react";
+import { fieldsOf, sectionOf, type SaleItem, type SaleItemFields } from "@/lib/saleItem";
 import { ItemForm } from "./ItemForm";
 
 const SOURCE_LABEL: Record<SaleItem["source"], string> = {
@@ -9,11 +10,15 @@ const SOURCE_LABEL: Record<SaleItem["source"], string> = {
   manual: "手入力",
 };
 
+/** 対象商品を最初に表示する行数 */
+const TARGETS_PREVIEW = 3;
+
 type Props = {
   item: SaleItem;
   editing: boolean;
   onToggleSelected: () => void;
   onToggleImportant: () => void;
+  onToggleNewRelease: () => void;
   onStartEdit: () => void;
   onSave: (fields: SaleItemFields) => void;
   onCancelEdit: () => void;
@@ -22,38 +27,71 @@ type Props = {
 
 export function ItemCard(props: Props) {
   const { item, editing } = props;
+  const [showAllTargets, setShowAllTargets] = useState(false);
 
   if (editing) {
     return (
       <li className="item">
-        <ItemForm initial={item} submitLabel="保存" onSubmit={props.onSave} onCancel={props.onCancelEdit} />
+        <ItemForm initial={fieldsOf(item)} submitLabel="保存" onSubmit={props.onSave} onCancel={props.onCancelEdit} />
       </li>
     );
   }
 
+  const isMain = sectionOf(item) === "main";
   const classes = ["item", !item.selected && "is-off", item.selected && item.important && "is-important"]
     .filter(Boolean)
     .join(" ");
-  const meta = [item.price, item.period, item.note && `※${item.note}`].filter(Boolean).join("\n");
+  const targets = item.targets ?? [];
+  const visibleTargets = showAllTargets ? targets : targets.slice(0, TARGETS_PREVIEW);
+  const extra = [item.price, item.note && `→${item.note}`, item.period].filter(Boolean).join("\n");
 
   return (
     <li className={classes}>
       <p className="item-name">
         {item.webStatus === "new" && <span className="badge badge-new">新着</span>}
         {item.webStatus === "changed" && <span className="badge badge-changed">変更</span>}
+        {item.newRelease && <span className="badge badge-release">新発売</span>}
+        {item.emoji}
         {item.name}
         <span className="item-source">{SOURCE_LABEL[item.source]}</span>
       </p>
-      {meta && <p className="item-meta">{meta}</p>}
+      {extra && <p className="item-meta">{extra}</p>}
+
+      {targets.length > 0 && (
+        <div className="targets">
+          <ul>
+            {visibleTargets.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+          {targets.length > TARGETS_PREVIEW && (
+            <button type="button" className="link-button" onClick={() => setShowAllTargets((v) => !v)}>
+              {showAllTargets ? "閉じる" : `ほか ${targets.length - TARGETS_PREVIEW} 件を表示`}
+            </button>
+          )}
+        </div>
+      )}
+
       {item.url && (
         <a className="item-link" href={item.url} target="_blank" rel="noopener noreferrer">
-          公式サイトで対象商品を見る ↗
+          公式サイトで見る ↗
         </a>
       )}
+
       <div className="btn-row">
         <button type="button" className="toggle" aria-pressed={item.selected} onClick={props.onToggleSelected}>
           {item.selected ? "✓ 載せる" : "載せない"}
         </button>
+        {isMain && (
+          <button
+            type="button"
+            className="toggle toggle-release"
+            aria-pressed={item.newRelease ?? false}
+            onClick={props.onToggleNewRelease}
+          >
+            🆕 新発売
+          </button>
+        )}
         <button
           type="button"
           className="toggle toggle-important"
@@ -63,7 +101,7 @@ export function ItemCard(props: Props) {
           ⭐ 重要
         </button>
       </div>
-      <div className="btn-row">
+      <div className="btn-row btn-row-sub">
         <button type="button" onClick={props.onStartEdit}>
           編集
         </button>

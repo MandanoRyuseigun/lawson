@@ -28,3 +28,28 @@ describe("parseStoredItems", () => {
     expect(parseStoredItems(raw)).toEqual([valid]);
   });
 });
+
+describe("parseStoredItems（追加の項目）", () => {
+  it("FF の項目（欄・絵文字・カテゴリ・対象商品）を復元する", () => {
+    const ff = {
+      ...valid,
+      id: "ff-1",
+      source: "web",
+      section: "main",
+      emoji: "🐔",
+      newRelease: true,
+      category: "fry",
+      targets: ["標準価格 288円(税込)"],
+    };
+    expect(parseStoredItems(JSON.stringify([ff]))).toEqual([ff]);
+  });
+
+  it("知らないカテゴリや形の違う対象商品は読み飛ばす", () => {
+    const raw = JSON.stringify([
+      { ...valid, id: "a", category: "unknown" },
+      { ...valid, id: "b", targets: [1, 2] },
+      { ...valid, id: "c", section: "top" },
+    ]);
+    expect(parseStoredItems(raw)).toEqual([]);
+  });
+});

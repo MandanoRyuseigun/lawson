@@ -9,6 +9,8 @@ describe("parseOcrText", () => {
       price: "20円引き",
       period: "11/24(火)〜11/30(月)",
       note: "",
+      emoji: "",
+      section: "other",
     });
   });
 
@@ -50,6 +52,8 @@ describe("parseOcrText", () => {
       price: "",
       period: "",
       note: "",
+      emoji: "",
+      section: "other",
     });
   });
 });

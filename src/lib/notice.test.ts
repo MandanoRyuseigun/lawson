@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { generateNotice } from "./notice";
+import { formatMonthDay, generateNotice, seasonalClosing } from "./notice";
 import type { SaleItem } from "./saleItem";
 
 function item(overrides: Partial<SaleItem>): SaleItem {
   return {
-    id: "x",
+    id: Math.random().toString(36),
     name: "商品",
     price: "",
     period: "",
@@ -16,57 +16,100 @@ function item(overrides: Partial<SaleItem>): SaleItem {
   };
 }
 
+const options = {
+  dateLabel: "11/17",
+  thanks: "からあげクンmilkコラボの拡販",
+  closing: "朝晩の冷え込みも激しいので、体調管理に気をつけて頑張っていきましょう！",
+};
+
 describe("generateNotice", () => {
-  it("重要項目を先頭の「特に注目」にまとめる", () => {
+  it("普段の告知文と同じ形で作る", () => {
     const text = generateNotice(
       [
-        item({ id: "1", name: "おにぎり", price: "100円引き" }),
-        item({ id: "2", name: "からあげクン", price: "20円引き", important: true }),
+        item({ name: "でからあげクン　夢のミックス味", emoji: "🐔", section: "main", newRelease: true }),
+        item({ name: "中華まん　特選豚まん（醤油）", emoji: "🥟", section: "main", newRelease: true }),
+        item({ name: "超ハッピーすぎ！チャレンジ！", note: "盛り過ぎチャレンジ開催" }),
+        item({ name: "年末催事予約受付中" }),
       ],
-      "11/24(火)",
+      options,
     );
 
     expect(text).toBe(
       [
-        "🎉【11/24(火)スタート】今週のセール情報です！",
+        "お疲れ様です。",
+        "今週もからあげクンmilkコラボの拡販ありがとうございました🙇‍♂️",
         "",
-        "⭐ 特に注目！",
-        "・からあげクン　20円引き",
+        "11/17からのお知らせです。",
+        "🐔でからあげクン　夢のミックス味　新発売",
+        "🥟中華まん　特選豚まん（醤油）　新発売",
         "",
-        "✨ そのほかのセール",
-        "・おにぎり　100円引き",
+        "その他",
+        "超ハッピーすぎ！チャレンジ！",
+        "→盛り過ぎチャレンジ開催",
+        "年末催事予約受付中",
         "",
-        "お客様へのお声がけ、よろしくお願いします💪",
-        "今週も一緒にがんばりましょう！",
+        "朝晩の冷え込みも激しいので、体調管理に気をつけて頑張っていきましょう！",
       ].join("\n"),
     );
   });
 
-  it("選択されていない項目は載せない", () => {
+  it("⭐重要の項目は各欄の先頭に置く", () => {
     const text = generateNotice(
-      [item({ name: "載せる商品" }), item({ name: "載せない商品", selected: false })],
-      "11/24(火)",
+      [
+        item({ name: "Ｌチキ", section: "main" }),
+        item({ name: "からあげクン", section: "main", important: true }),
+        item({ name: "お菓子セール" }),
+        item({ name: "コーヒーセール", important: true }),
+      ],
+      options,
     );
-    expect(text).toContain("載せる商品");
-    expect(text).not.toContain("載せない商品");
+    expect(text).toContain("からあげクン\nＬチキ");
+    expect(text).toContain("その他\nコーヒーセール\nお菓子セール");
   });
 
-  it("重要項目がなければ見出しは「セール内容」になる", () => {
-    const text = generateNotice([item({ name: "パン" })], "11/24(火)");
-    expect(text).toContain("✨ セール内容\n・パン");
-    expect(text).not.toContain("特に注目");
-  });
-
-  it("期間と補足は入力がある場合だけ載せる", () => {
+  it("選ばれていない項目は載せない", () => {
     const text = generateNotice(
-      [item({ name: "コーヒー", period: "11/24(火)〜11/30(月)", note: "なくなり次第終了" })],
-      "11/24(火)",
+      [item({ name: "載せる", section: "main" }), item({ name: "載せない", section: "main", selected: false })],
+      options,
     );
-    expect(text).toContain("・コーヒー\n　📅 11/24(火)〜11/30(月)\n　※なくなり次第終了");
+    expect(text).toContain("載せる");
+    expect(text).not.toContain("載せない");
   });
 
-  it("何も選ばれていなければその旨を書く", () => {
-    const text = generateNotice([item({ selected: false })], "11/24(火)");
-    expect(text).toContain("まだ選ばれていません");
+  it("価格やひとことは名前の後ろに付ける", () => {
+    const text = generateNotice([item({ name: "モカブレンド", price: "20円引き", section: "main" })], options);
+    expect(text).toContain("モカブレンド　20円引き");
+  });
+
+  it("メイン欄が空なら、その他の項目を見出しなしで続ける", () => {
+    const text = generateNotice([item({ name: "お菓子セール" })], options);
+    expect(text).toContain("11/17からのお知らせです。\nお菓子セール");
+    expect(text).not.toContain("その他");
+  });
+
+  it("お礼が空でも文が崩れない", () => {
+    const text = generateNotice([item({ name: "A" })], { ...options, thanks: "  " });
+    expect(text.startsWith("お疲れ様です。\n今週もありがとうございました🙇‍♂️")).toBe(true);
+  });
+
+  it("結びが空なら最後の段落を出さない", () => {
+    const text = generateNotice([item({ name: "A" })], { ...options, closing: "" });
+    expect(text.endsWith("A")).toBe(true);
+  });
+});
+
+describe("seasonalClosing", () => {
+  it("月に合った例文を返す", () => {
+    expect(seasonalClosing(11)).toContain("冷え込み");
+    expect(seasonalClosing(1)).toContain("寒い日");
+    expect(seasonalClosing(4)).toContain("季節の変わり目");
+    expect(seasonalClosing(7)).toContain("水分補給");
+  });
+});
+
+describe("formatMonthDay", () => {
+  it("月/日 にする", () => {
+    expect(formatMonthDay("2026-11-17")).toBe("11/17");
+    expect(formatMonthDay("2026-01-06")).toBe("1/6");
   });
 });
