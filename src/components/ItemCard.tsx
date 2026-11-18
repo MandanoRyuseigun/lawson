@@ -20,6 +20,8 @@ type Props = {
   item: SaleItem;
   /** 表示中の告知の開始日。新商品の何週目かの表示に使う */
   startDate: string | null;
+  /** 公式サイトの項目と重複していそうなとき、その名前と片方を外す操作 */
+  duplicate?: { webItemName: string; onDropThis: () => void; onDropOther: () => void };
   editing: boolean;
   onToggleSelected: () => void;
   onToggleImportant: () => void;
@@ -70,6 +72,20 @@ export function ItemCard(props: Props) {
         <span className="item-source">{SOURCE_LABEL[item.source]}</span>
       </p>
       {extra && <p className="item-meta">{extra}</p>}
+
+      {props.duplicate && (
+        <div className="duplicate-box">
+          <p>⚠️ 公式サイトの「{props.duplicate.webItemName}」と重複しているかもしれません。どちらか一方を外してください。</p>
+          <div className="btn-row btn-row-sub">
+            <button type="button" onClick={props.duplicate.onDropThis}>
+              こちらを載せない
+            </button>
+            <button type="button" onClick={props.duplicate.onDropOther}>
+              公式サイトの方を載せない
+            </button>
+          </div>
+        </div>
+      )}
 
       {targets.length > 0 && (
         <div className="targets">

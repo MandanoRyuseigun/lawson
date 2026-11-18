@@ -20,6 +20,7 @@ import {
   type MergeResult,
 } from "@/lib/mergeWebEntries";
 import type { TopBanner } from "@/lib/lawsonTop";
+import { findDuplicates } from "@/lib/duplicates";
 import { generateNotice } from "@/lib/notice";
 import { groupFF } from "@/lib/newRelease";
 import {
@@ -145,6 +146,9 @@ export default function Home() {
   const selectedMain = mainItems.filter((i) => i.selected).length;
   const selectedOther = otherItems.filter((i) => i.selected).length;
   const selectedLabel = selectedDate ? formatIsoDate(selectedDate) : "…";
+  // 写真・手入力の項目と公式サイトの項目の重複（両方とも「載せる」のもの）
+  const duplicates = findDuplicates(visibleItems);
+  const duplicateByItem = new Map(duplicates.map((d) => [d.itemId, d]));
   const busy = status.kind === "loading";
 
   // 週ごとのメモ（お礼する取り組み・結びの挨拶の書き換え）
@@ -262,6 +266,15 @@ export default function Home() {
             key={item.id}
             item={item}
             startDate={selectedDate}
+            duplicate={(() => {
+              const d = duplicateByItem.get(item.id);
+              if (!d) return undefined;
+              return {
+                webItemName: d.webItemName,
+                onDropThis: () => updateItem(item.id, { selected: false }),
+                onDropOther: () => updateItem(d.webItemId, { selected: false }),
+              };
+            })()}
             editing={editingId === item.id}
             onToggleSelected={() => updateItem(item.id, { selected: !item.selected })}
             onToggleImportant={() =>
@@ -525,6 +538,11 @@ export default function Home() {
           <button type="button" className="link-button" onClick={() => updateWeekNote({ closing: undefined })}>
             天気から自動で作った文に戻す
           </button>
+        )}
+        {duplicates.length > 0 && (
+          <p className="notice-box">
+            ⚠️ 写真・手入力の項目のうち {duplicates.length} 件が、公式サイトの項目と重複しているかもしれません。①②の「⚠️」の付いた項目で、どちらか一方を外してください。
+          </p>
         )}
         <NoticeEditor
           text={noticeText}

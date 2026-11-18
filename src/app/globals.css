@@ -445,3 +445,17 @@ textarea.notice {
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
+
+/* 公式サイトの項目との重複の警告 */
+.duplicate-box {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--important);
+  background: var(--important-bg);
+  font-size: 0.9rem;
+}
+
+.duplicate-box p {
+  margin: 0 0 6px;
+}
