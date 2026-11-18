@@ -87,7 +87,7 @@ export function applyFields(item: SaleItem, fields: SaleItemFields): SaleItem {
   };
 }
 
-export function sectionOf(item: SaleItem): NoticeSection {
+export function sectionOf(item: Pick<SaleItem, "section">): NoticeSection {
   return item.section ?? "other";
 }
 

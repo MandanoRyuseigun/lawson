@@ -86,7 +86,7 @@ describe("generateNotice", () => {
       ],
       options,
     );
-    expect(text).toContain("📌からあげクン\n📌Ｌチキ");
+    expect(text).toContain("🐔からあげクン\n🍗Ｌチキ");
     expect(text).toContain("その他\n🉐コーヒーセール\n🉐お菓子セール");
   });
 
