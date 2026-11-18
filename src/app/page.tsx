@@ -40,13 +40,12 @@ import {
   saveWeeklyNotes,
 } from "@/lib/storage";
 import {
-  previousInitiative,
   thanksFor,
   updateNote,
   type WeeklyNote,
   type WeeklyNotes,
 } from "@/lib/weeklyNotes";
-import { addDays, getTargetTuesday, toIsoDate } from "@/lib/targetTuesday";
+import { getTargetTuesday, toIsoDate } from "@/lib/targetTuesday";
 import { closingFromWeather, summarizeRecentWeather, type DailyWeather } from "@/lib/weather";
 
 type Draft = { fields: SaleItemFields; source: "photo" | "manual"; key: number };
@@ -143,12 +142,9 @@ export default function Home() {
   const selectedLabel = selectedDate ? formatIsoDate(selectedDate) : "…";
   const busy = status.kind === "loading";
 
-  // 週ごとのメモ（今週の取り組み → 翌週のお礼）
+  // 週ごとのメモ（お礼する取り組み・結びの挨拶の書き換え）
   const weekNote = selectedDate ? weeklyNotes[selectedDate] : undefined;
   const thanks = selectedDate ? thanksFor(weeklyNotes, selectedDate) : "";
-  const prevInitiative = selectedDate ? previousInitiative(weeklyNotes, selectedDate) : null;
-  const thanksEdited = weekNote?.thanks !== undefined;
-  const nextWeekLabel = selectedDate ? formatIsoDate(addDays(selectedDate, 7)) : "";
   // 結びの挨拶: ここ数日の天気（なければ季節の例文）から自動で作り、その週だけ書き換えられる
   const closingMonth = selectedDate ? Number(selectedDate.slice(5, 7)) : new Date().getMonth() + 1;
   const autoClosing = closingFromWeather(weather?.days ?? [], closingMonth);
@@ -459,47 +455,15 @@ export default function Home() {
       <section className="section">
         <h2>④ 告知文を作る</h2>
         <label>
-          📝 今週の取り組み
-          <input
-            type="text"
-            value={weekNote?.initiative ?? ""}
-            onChange={(e) => updateWeekNote({ initiative: e.target.value })}
-            placeholder="例: でからあげクン 夢のMIX味の拡販"
-          />
-        </label>
-        <p className="muted">
-          ここに入れた内容は、次の週（{nextWeekLabel}開始）の告知文で「今週も〇〇ありがとうございました🙇‍♂️」のお礼に自動で入ります。
-        </p>
-
-        <label>
           🙇 先週の取り組みへのお礼
           <input
             type="text"
             value={thanks}
             onChange={(e) => updateWeekNote({ thanks: e.target.value })}
-            placeholder="例: からあげクンmilkコラボの拡販"
+            placeholder="例: からあげクンの拡販"
           />
         </label>
-        <p className="muted">
-          →「今週も{thanks.trim() || "〇〇"}ありがとうございました🙇‍♂️」
-          {!thanksEdited && prevInitiative && (
-            <>
-              <br />
-              {formatIsoDate(prevInitiative.date)}開始の週に入れた取り組みを使っています。
-            </>
-          )}
-          {!thanksEdited && !prevInitiative && (
-            <>
-              <br />
-              先週の取り組みが入っていないので、ここに直接入れてください。
-            </>
-          )}
-        </p>
-        {thanksEdited && prevInitiative && (
-          <button type="button" className="link-button" onClick={() => updateWeekNote({ thanks: undefined })}>
-            先週の取り組み（{prevInitiative.text}）に戻す
-          </button>
-        )}
+        <p className="muted">→「今週も{thanks.trim() || "〇〇"}ありがとうございました🙇‍♂️」</p>
         <label>
           🌤️ 結びの挨拶
           <textarea rows={3} value={closing} onChange={(e) => updateWeekNote({ closing: e.target.value })} />
