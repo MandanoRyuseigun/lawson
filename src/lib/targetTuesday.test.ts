@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatShortDate, getTargetTuesday, toIsoDate } from "./targetTuesday";
+import { addDays, formatShortDate, getTargetTuesday, toIsoDate } from "./targetTuesday";
 
 describe("getTargetTuesday", () => {
   it("水曜日なら翌週の火曜日を返す", () => {
@@ -34,5 +34,12 @@ describe("toIsoDate", () => {
 describe("formatShortDate", () => {
   it("月/日(曜日) の形式で返す", () => {
     expect(formatShortDate(new Date(2026, 10, 24))).toBe("11/24(火)");
+  });
+});
+
+describe("addDays", () => {
+  it("n 日後を返し、月や年をまたいでも正しく数える", () => {
+    expect(addDays("2026-11-24", 7)).toBe("2026-12-01");
+    expect(addDays("2026-12-29", 7)).toBe("2027-01-05");
   });
 });

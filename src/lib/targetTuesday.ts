@@ -23,3 +23,9 @@ export function formatShortDate(date: Date): string {
   const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
   return `${date.getMonth() + 1}/${date.getDate()}(${weekdays[date.getDay()]})`;
 }
+
+/** "2026-11-24" の n 日後を同じ形で返す */
+export function addDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return toIsoDate(new Date(y, m - 1, d + days));
+}
