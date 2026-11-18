@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { formatPeriod, isAvailableInArea, parseSaleList } from "./lawsonSale";
+import { formatPeriod, isAvailableInArea, isSaleId, parseSaleDetail, parseSaleList } from "./lawsonSale";
 
 const fixture = readFileSync(join(__dirname, "__fixtures__", "saleList.html"), "utf-8");
+const detailFixture = readFileSync(join(__dirname, "__fixtures__", "saleDetail.html"), "utf-8");
 
 describe("parseSaleList", () => {
   const sales = parseSaleList(fixture);
@@ -52,5 +53,33 @@ describe("isAvailableInArea", () => {
 describe("formatPeriod", () => {
   it("曜日付きの期間にする", () => {
     expect(formatPeriod("2026-11-17", "2026-11-23")).toBe("11/17(火)〜11/23(月)");
+  });
+});
+
+describe("parseSaleDetail", () => {
+  const lines = parseSaleDetail(detailFixture);
+
+  it("対象商品を価格付きで取り出す", () => {
+    expect(lines).toContain("エースコック　タテロング　飲み干す一杯　ごま贅沢担担麺 332円");
+    expect(lines).toContain("モカブレンド(S) 180円→160円");
+  });
+
+  it("価格のない説明行も順番どおりに残す", () => {
+    expect(lines[0]).toBe(
+      "●下記対象商品を購入すると、無料クーポンがレシートについてきます。 レシート無料券　発券期間　11/17(火)〜11/23(月)",
+    );
+    expect(lines).toHaveLength(4);
+  });
+
+  it("対象商品の表がなければ空にする", () => {
+    expect(parseSaleDetail("<main>ページが見つかりません</main>")).toEqual([]);
+  });
+});
+
+describe("isSaleId", () => {
+  it("詳細ページの番号の形だけを受け付ける", () => {
+    expect(isSaleId("1534360_3677")).toBe(true);
+    expect(isSaleId("../index")).toBe(false);
+    expect(isSaleId("1534360")).toBe(false);
   });
 });
