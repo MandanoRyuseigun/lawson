@@ -1,5 +1,6 @@
 import { isFFCategory } from "./lawsonFF";
 import type { SaleItem } from "./saleItem";
+import type { DailyWeather } from "./weather";
 import { parseWeeklyNotes, type WeeklyNotes } from "./weeklyNotes";
 
 const optionalString = (v: unknown) => v === undefined || typeof v === "string";
@@ -78,31 +79,6 @@ export function saveFetchedAt(iso: string): void {
   }
 }
 
-const NOTICE_SETTINGS_KEY = "lawson-sale-notice:noticeSettings:v1";
-
-/** 結びの挨拶の下書き（書き換えた月を覚えておき、月が変わったら季節の例文に戻す） */
-export type NoticeSettings = { closing: string; closingMonth: number };
-
-export function loadNoticeSettings(): NoticeSettings | null {
-  try {
-    const data: unknown = JSON.parse(window.localStorage.getItem(NOTICE_SETTINGS_KEY) ?? "null");
-    if (typeof data !== "object" || data === null) return null;
-    const v = data as Record<string, unknown>;
-    if (typeof v.closing !== "string" || typeof v.closingMonth !== "number") return null;
-    return { closing: v.closing, closingMonth: v.closingMonth };
-  } catch {
-    return null;
-  }
-}
-
-export function saveNoticeSettings(settings: NoticeSettings): void {
-  try {
-    window.localStorage.setItem(NOTICE_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // 保存できなくても続ける
-  }
-}
-
 const WEEKLY_NOTES_KEY = "lawson-sale-notice:weeklyNotes:v1";
 
 /** 週ごとの取り組み・お礼のメモ */
@@ -117,6 +93,35 @@ export function loadWeeklyNotes(): WeeklyNotes {
 export function saveWeeklyNotes(notes: WeeklyNotes): void {
   try {
     window.localStorage.setItem(WEEKLY_NOTES_KEY, JSON.stringify(notes));
+  } catch {
+    // 保存できなくても続ける
+  }
+}
+
+const WEATHER_KEY = "lawson-sale-notice:weather:v1";
+
+/** 最後に取得したここ数日の天気（気象庁・高松） */
+export type StoredWeather = { fetchedAt: string; days: DailyWeather[] };
+
+export function loadWeather(): StoredWeather | null {
+  try {
+    const data: unknown = JSON.parse(window.localStorage.getItem(WEATHER_KEY) ?? "null");
+    if (typeof data !== "object" || data === null) return null;
+    const v = data as Record<string, unknown>;
+    if (typeof v.fetchedAt !== "string" || !Array.isArray(v.days)) return null;
+    const days = v.days.filter(
+      (d): d is DailyWeather =>
+        typeof d === "object" && d !== null && typeof (d as DailyWeather).date === "string",
+    );
+    return { fetchedAt: v.fetchedAt, days };
+  } catch {
+    return null;
+  }
+}
+
+export function saveWeather(weather: StoredWeather): void {
+  try {
+    window.localStorage.setItem(WEATHER_KEY, JSON.stringify(weather));
   } catch {
     // 保存できなくても続ける
   }

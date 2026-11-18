@@ -4,6 +4,8 @@ export type WeeklyNote = {
   initiative?: string;
   /** その週の告知に入れるお礼の内容を手で書き換えた場合の文 */
   thanks?: string;
+  /** その週の結びの挨拶を手で書き換えた場合の文（なければ天気から自動で作る） */
+  closing?: string;
 };
 
 /** キーは告知の開始日（YYYY-MM-DD） */
@@ -49,6 +51,7 @@ export function updateNote(notes: WeeklyNotes, startDate: string, patch: WeeklyN
   const cleaned: WeeklyNote = {};
   if (merged.initiative !== undefined && merged.initiative !== "") cleaned.initiative = merged.initiative;
   if (merged.thanks !== undefined) cleaned.thanks = merged.thanks;
+  if (merged.closing !== undefined) cleaned.closing = merged.closing;
   const next = { ...notes };
   if (Object.keys(cleaned).length === 0) delete next[startDate];
   else next[startDate] = cleaned;
@@ -68,6 +71,7 @@ export function parseWeeklyNotes(raw: string | null): WeeklyNotes {
       const note: WeeklyNote = {};
       if (typeof v.initiative === "string") note.initiative = v.initiative;
       if (typeof v.thanks === "string") note.thanks = v.thanks;
+      if (typeof v.closing === "string") note.closing = v.closing;
       if (Object.keys(note).length > 0) result[date] = note;
     }
     return result;

@@ -18,7 +18,7 @@ import {
   type MergeResult,
 } from "@/lib/mergeWebEntries";
 import type { TopBanner } from "@/lib/lawsonTop";
-import { generateNotice, seasonalClosing } from "@/lib/notice";
+import { generateNotice } from "@/lib/notice";
 import { groupFF } from "@/lib/newRelease";
 import {
   applyFields,
@@ -31,11 +31,12 @@ import {
 import {
   loadFetchedAt,
   loadItems,
-  loadNoticeSettings,
+  loadWeather,
   loadWeeklyNotes,
   saveFetchedAt,
   saveItems,
-  saveNoticeSettings,
+  saveWeather,
+  type StoredWeather,
   saveWeeklyNotes,
 } from "@/lib/storage";
 import {
@@ -46,10 +47,12 @@ import {
   type WeeklyNotes,
 } from "@/lib/weeklyNotes";
 import { addDays, getTargetTuesday, toIsoDate } from "@/lib/targetTuesday";
+import { closingFromWeather, summarizeRecentWeather, type DailyWeather } from "@/lib/weather";
 
 type Draft = { fields: SaleItemFields; source: "photo" | "manual"; key: number };
 type SalesResponse = { sales?: WebSale[]; error?: string };
 type TopResponse = { banners?: TopBanner[]; error?: string };
+type WeatherResponse = { days?: DailyWeather[]; error?: string };
 type FFResponse = { products?: FFProduct[]; failed?: string[]; releaseDatesUnavailable?: boolean; error?: string };
 
 /** API から JSON を受け取る。通信に失敗したら error だけを持つ結果にする */
@@ -98,32 +101,23 @@ export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [weeklyNotes, setWeeklyNotes] = useState<WeeklyNotes>({});
-  const [closing, setClosing] = useState("");
-  const [closingMonth, setClosingMonth] = useState(0);
+  const [weather, setWeather] = useState<StoredWeather | null>(null);
   const [noticeText, setNoticeText] = useState("");
 
   useEffect(() => {
     const target = getTargetTuesday();
-    const month = target.getMonth() + 1;
-    const settings = loadNoticeSettings();
     setTargetDate(toIsoDate(target));
     setSelectedDate(toIsoDate(target));
     setItems(loadItems());
     setFetchedAt(loadFetchedAt());
     setWeeklyNotes(loadWeeklyNotes());
-    // 結びは月が変わったら季節の例文に戻す
-    setClosing(settings && settings.closingMonth === month ? settings.closing : seasonalClosing(month));
-    setClosingMonth(month);
+    setWeather(loadWeather());
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     if (loaded) saveItems(items);
   }, [items, loaded]);
-
-  useEffect(() => {
-    if (loaded) saveNoticeSettings({ closing, closingMonth });
-  }, [closing, closingMonth, loaded]);
 
   useEffect(() => {
     if (loaded) saveWeeklyNotes(weeklyNotes);
@@ -155,6 +149,12 @@ export default function Home() {
   const prevInitiative = selectedDate ? previousInitiative(weeklyNotes, selectedDate) : null;
   const thanksEdited = weekNote?.thanks !== undefined;
   const nextWeekLabel = selectedDate ? formatIsoDate(addDays(selectedDate, 7)) : "";
+  // 結びの挨拶: ここ数日の天気（なければ季節の例文）から自動で作り、その週だけ書き換えられる
+  const closingMonth = selectedDate ? Number(selectedDate.slice(5, 7)) : new Date().getMonth() + 1;
+  const autoClosing = closingFromWeather(weather?.days ?? [], closingMonth);
+  const closingEdited = weekNote?.closing !== undefined;
+  const closing = weekNote?.closing ?? autoClosing.text;
+  const weatherSummary = summarizeRecentWeather(weather?.days ?? []);
   const updateWeekNote = (patch: WeeklyNote) => {
     if (selectedDate) setWeeklyNotes((prev) => updateNote(prev, selectedDate, patch));
   };
@@ -191,10 +191,11 @@ export default function Home() {
     setStatus({ kind: "loading", message: "公式サイトから取得中…" });
     setDetailStatus("");
 
-    const [salesRes, ffRes, topRes] = await Promise.all([
+    const [salesRes, ffRes, topRes, weatherRes] = await Promise.all([
       getJson<SalesResponse>("/api/sales"),
       getJson<FFResponse>("/api/ff"),
       getJson<TopResponse>("/api/top"),
+      getJson<WeatherResponse>("/api/weather"),
     ]);
 
     let next = items;
@@ -226,6 +227,15 @@ export default function Home() {
       messages.push(summarize("トップページ", r));
     } else {
       errors.push(`トップページ: ${topRes.error ?? "取得に失敗しました。"}`);
+    }
+
+    // 天気は結びの挨拶に使うだけなので、取れなくても季節の例文で続ける
+    if (weatherRes.days && weatherRes.days.length > 0) {
+      const stored = { fetchedAt: new Date().toISOString(), days: weatherRes.days };
+      setWeather(stored);
+      saveWeather(stored);
+    } else {
+      errors.push(weatherRes.error ?? "天気を取得できませんでした（結びは季節の例文を使います）。");
     }
 
     setItems(next);
@@ -491,9 +501,27 @@ export default function Home() {
           </button>
         )}
         <label>
-          結びの挨拶
-          <input type="text" value={closing} onChange={(e) => setClosing(e.target.value)} />
+          🌤️ 結びの挨拶
+          <textarea rows={3} value={closing} onChange={(e) => updateWeekNote({ closing: e.target.value })} />
         </label>
+        <p className="muted">
+          {closingEdited
+            ? "この週の分を書き換えています。"
+            : weatherSummary
+              ? `高松のここ数日（${weatherSummary}）から自動で選んでいます（${autoClosing.reason}）。`
+              : "天気をまだ取得していないので、季節の例文を入れています。「更新」を押すと、ここ数日の天気から選び直します。"}
+          {weatherSummary && (
+            <>
+              <br />
+              出典：気象庁ホームページ（高松の観測データ）
+            </>
+          )}
+        </p>
+        {closingEdited && (
+          <button type="button" className="link-button" onClick={() => updateWeekNote({ closing: undefined })}>
+            天気から自動で作った文に戻す
+          </button>
+        )}
         <NoticeEditor
           text={noticeText}
           onChange={setNoticeText}

@@ -40,6 +40,12 @@ describe("updateNote", () => {
     expect(notes).toEqual({ "2026-11-24": { initiative: "A", thanks: "B" } });
   });
 
+  it("結びの挨拶の書き換えを保存し、undefined で消す", () => {
+    const notes = updateNote({}, "2026-11-24", { closing: "寒いので気をつけて！" });
+    expect(notes).toEqual({ "2026-11-24": { closing: "寒いので気をつけて！" } });
+    expect(updateNote(notes, "2026-11-24", { closing: undefined })).toEqual({});
+  });
+
   it("取り組みを空にしたら消し、何も残らなければその週ごと消す", () => {
     expect(updateNote({ "2026-11-24": { initiative: "A" } }, "2026-11-24", { initiative: "" })).toEqual({});
   });
@@ -48,11 +54,11 @@ describe("updateNote", () => {
 describe("parseWeeklyNotes", () => {
   it("正しいデータを復元し、形の合わないものは読み飛ばす", () => {
     const raw = JSON.stringify({
-      "2026-11-17": { initiative: "A", thanks: "B" },
+      "2026-11-17": { initiative: "A", thanks: "B", closing: "C" },
       "bad-date": { initiative: "C" },
       "2026-11-24": { initiative: 1 },
     });
-    expect(parseWeeklyNotes(raw)).toEqual({ "2026-11-17": { initiative: "A", thanks: "B" } });
+    expect(parseWeeklyNotes(raw)).toEqual({ "2026-11-17": { initiative: "A", thanks: "B", closing: "C" } });
   });
 
   it("空や壊れたデータは空にする", () => {
